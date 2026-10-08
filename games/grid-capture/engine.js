@@ -45,7 +45,7 @@ function spawn(s,c){if(s.units.filter(u=>u.side===c.owner).length>=50)return;con
 function path(s,from,goal){const queue=[from],prev=new Map([[from,null]]);for(let i=0;i<queue.length;i++){const id=queue[i];if(id===goal)break;for(const n of s.cells[id].neighbors)if(!s.cells[n].water&&!prev.has(n)){prev.set(n,id);queue.push(n);}}if(!prev.has(goal))return null;let step=goal;while(prev.get(step)!==from&&prev.get(step)!==null)step=prev.get(step);return step===from?null:step;}
 function finish(s,winner,reason){if(s.phase==='over')return;s.phase='over';s.winner=winner;s.reason=reason;}
 function stats(s,side){return {land:s.cells.filter(c=>c.owner===side&&!c.water).length,gold:Math.floor(s.gold[side]),income:2+s.cells.filter(c=>c.building?.side===side&&c.building.type==='mine').length*3,units:s.units.filter(u=>u.side===side&&u.hp>0).length,buildings:s.cells.filter(c=>c.building?.side===side).length};}
-function damageBuilding(s,c,amount,side){const b=c.building;if(!b)return;b.hp-=amount;c.flash=.3;if(b.hp<=0){s.events.push({type:'destroy',cell:c.id,side});c.building=null;c.owner=side;s.captures[side]++;if(b.type==='castle')finish(s,side,'攻破了敌方主城');}}
+function damageBuilding(s,c,amount,side){const b=c.building;if(!b)return;b.hp-=amount;c.flash=.3;if(b.hp<=0){s.events.push({type:'destroy',cell:c.id,side});c.building=null;c.owner=side;s.captures[side]++;if(b.type==='castle')finish(s,side,side===0?'攻破了敌方主城':'我方主城被攻破');}}
 function tick(s,dt){
  if(s.phase!=='playing')return;dt=Math.min(Math.max(dt,0),.1);s.elapsed+=dt;s.gold[0]+=2*dt;s.gold[1]+=2*dt;
  for(const c of s.cells){c.flash=Math.max(0,c.flash-dt);const b=c.building;if(!b)continue;if(b.type==='mine')s.gold[b.side]+=3*dt;
