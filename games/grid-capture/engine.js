@@ -1,6 +1,23 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.HexWar=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const COLS=9,ROWS=15,DURATION=180;
+// Legacy constants describe the classic board. Every live match carries its own dimensions.
+const SIZES={
+ standard:{name:'标准',cols:9,rows:15,duration:180,development:0,opening:15},
+ large:{name:'大地图',cols:15,rows:25,duration:480,development:60,opening:19},
+ huge:{name:'超大地图',cols:21,rows:33,duration:720,development:90,opening:37}
+};
+const AI_PERSONALITIES={
+ economy:{name:'经营型',mines:3,gather:6,route:'economy'},
+ expansion:{name:'扩张型',mines:2,gather:4,route:'offense'},
+ defense:{name:'稳守型',mines:2,gather:8,route:'defense'}
+};
+const AI_STANCES={develop:'发展经济',gather:'集结部队',attack:'推进进攻',defend:'回防领地',regroup:'收缩固守'};
+const frameCaches=new WeakMap(),navigationCaches=new WeakMap();
+function developmentRemaining(s){return Math.max(0,(s.developmentDuration||0)-s.elapsed);}
+function inDevelopment(s){return developmentRemaining(s)>1e-7;}
+function unitLimit(s){return s.classic?50:40;}
+
 const FACTIONS=[
  {id:0,name:'金曜王国',label:'你',color:'#d4e879',light:'#ebf6ac',dark:'#718839'},
  {id:1,name:'赤焰军团',label:'赤',color:'#e1846d',light:'#ffb99e',dark:'#a44e44'},
@@ -64,30 +81,53 @@ function buildingEffects(b){
 }
 function buildingMaxHp(s,b){return TYPES[b.type].hp*(1+.25*Math.max(0,(b.level||1)-1))*buildingEffects(b).buildingHp*routeEffects(s,b.side).buildingHp;}
 function rescaleBuilding(s,b){const ratio=b.maxHp>0?Math.max(0,Math.min(1,b.hp/b.maxHp)):1;b.maxHp=buildingMaxHp(s,b);b.hp=b.maxHp*ratio;}
-function aura(s,side,position){let training=0,damage=0;for(const c of s.cells){const b=c.building;if(!b||b.side!==side||b.type!=='beacon'||b.hp<=0)continue;const e=buildingEffects(b);if(distance(c,position)<=e.auraRadius+1e-8){training=Math.max(training,e.auraTraining);damage=Math.max(damage,e.auraDamage);}}return {training,damage};}
+function aura(s,side,position){let training=0,damage=0;for(const c of frameCaches.get(s)?.beacons||s.cells){const b=c.building;if(!b||b.side!==side||b.type!=='beacon'||b.hp<=0)continue;const e=buildingEffects(b);if(distance(c,position)<=e.auraRadius+1e-8){training=Math.max(training,e.auraTraining);damage=Math.max(damage,e.auraDamage);}}return {training,damage};}
 function directDamage(s,side,position){return routeEffects(s,side).damage*(1+aura(s,side,position).damage);}
 
 function rng(seed){let a=seed>>>0;return ()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};}
 function xy(c,r){return {x:c+(r%2)*.5,y:r*Math.sqrt(3)/2};}
-function neighborsIndex(c,r){const d=r%2?[[1,0],[-1,0],[0,-1],[1,-1],[0,1],[1,1]]:[[1,0],[-1,0],[-1,-1],[0,-1],[-1,1],[0,1]];return d.map(([x,y])=>[c+x,r+y]).filter(([x,y])=>x>=0&&x<COLS&&y>=0&&y<ROWS).map(([x,y])=>y*COLS+x);}
+function neighborsIndex(c,r,cols=COLS,rows=ROWS){const d=r%2?[[1,0],[-1,0],[0,-1],[1,-1],[0,1],[1,1]]:[[1,0],[-1,0],[-1,-1],[0,-1],[-1,1],[0,1]];return d.map(([x,y])=>[c+x,r+y]).filter(([x,y])=>x>=0&&x<cols&&y>=0&&y<rows).map(([x,y])=>y*cols+x);}
 function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function flood(cells,from,ignoreWater=false){const d=new Map([[from,0]]),q=[from];for(let i=0;i<q.length;i++)for(const n of cells[q[i]].neighbors)if(!d.has(n)&&(ignoreWater||!cells[n].water)){d.set(n,d.get(q[i])+1);q.push(n);}return d;}
 function create(seed=Date.now(),difficulty='normal',options={}){
  options=options&&typeof options==='object'?options:{};seed=Number(seed)>>>0;difficulty=['easy','normal','hard'].includes(difficulty)?difficulty:'normal';
- const mode=Object.prototype.hasOwnProperty.call(MODES,options.mode)?options.mode:'duel',map=Object.prototype.hasOwnProperty.call(MAPS,options.map)?options.map:'lake',count=MODES[mode].players,classic=mode==='duel'&&map==='lake';
- const random=rng(seed),cells=[],bases=count===2?[112,22]:count===3?[112,20,24]:[110,20,24,114];
+ const size=own(SIZES,options.size)?options.size:'standard',sizeSpec=SIZES[size],COLS=sizeSpec.cols,ROWS=sizeSpec.rows,expanded=size!=='standard',developmentDuration=options.development===false?0:sizeSpec.development;
+ const mode=Object.prototype.hasOwnProperty.call(MODES,options.mode)?options.mode:'duel',map=Object.prototype.hasOwnProperty.call(MAPS,options.map)?options.map:'lake',count=MODES[mode].players,classic=!expanded&&mode==='duel'&&map==='lake';
+ const random=rng(seed),cells=[],mid=(COLS-1)/2,left=size==='huge'?4:3,right=COLS-1-left;
+ const bases=expanded?(count===2?[(ROWS-5)*COLS+mid,4*COLS+mid]:count===3?(size==='huge'?[22*COLS+mid,10*COLS+left,10*COLS+right]:[16*COLS+mid,8*COLS+left,8*COLS+right]):[(ROWS-5)*COLS+left,4*COLS+left,4*COLS+right,(ROWS-5)*COLS+right]):count===2?[112,22]:count===3?[112,20,24]:[110,20,24,114];
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
   const lake=(r>=5&&r<=9&&c>=3&&c<=5)||((r===4||r===10)&&c===4);
   let water=map==='lake'?lake:map==='crossroads'?(r===7&&![1,4,7].includes(c))||([5,6,8,9].includes(r)&&c===4):map==='rift'?(r>=4&&r<=10&&r!==7&&[3,5].includes(c))||([5,9].includes(r)&&c===4):random()<.18;
+  if(expanded){
+   const nx=(c+(r%2)*.5-(COLS-1)/2)/((COLS-1)/2),ny=(r-(ROWS-1)/2)/((ROWS-1)/2);
+   if(map==='lake')water=Math.abs(nx)<.29&&Math.abs(ny)<.38&&nx*nx/.0841+ny*ny/.1444<1.4;
+   else if(map==='crossroads')water=(Math.abs(ny)<.12&&![0,.66,-.66].some(bridge=>Math.abs(nx-bridge)<.11))||(Math.abs(nx)<.075&&Math.abs(ny)>.12&&Math.abs(ny)<.38);
+   else if(map==='rift')water=Math.abs(ny)<.58&&Math.abs(ny)>.09&&(Math.abs(Math.abs(nx)-.26)<.075||(Math.abs(ny)>.27&&Math.abs(ny)<.37&&Math.abs(nx)<.26));
+  }
   const roll=random(),offer=roll<.25?'mine':roll<.55?'barracks':roll<.7?'archer':roll<.82?'tower':roll<.93?'mystery':'knight';
-  cells.push({id:r*COLS+c,c,r,...xy(c,r),water,owner:-1,building:null,outpost:null,offer,neighbors:neighborsIndex(c,r),flash:0});
+  cells.push({id:r*COLS+c,c,r,...xy(c,r),water,owner:-1,building:null,outpost:null,offer,neighbors:neighborsIndex(c,r,COLS,ROWS),flash:0});
  }
  // Clear identical opening rings, and connect every land component. Water never strands a castle or objective.
- if(!classic){for(const id of bases)for(const [n,d]of flood(cells,id,true))if(d<=2)cells[n].water=false;
-  for(const c of cells){if(c.water)continue;let reachable=flood(cells,bases[0]);if(reachable.has(c.id))continue;let at=c.id;while(!reachable.has(at)){cells[at].water=false;at=cells[at].neighbors.slice().sort((a,b)=>distance(cells[a],cells[bases[0]])-distance(cells[b],cells[bases[0]]))[0];}cells[at].water=false;}
+ if(!classic){
+  // The same dry opening and buffer rings surround every base. All land is reachable.
+  const clearRadius=expanded?(size==='huge'?4:3):2;
+  for(const id of bases)for(const [n,d]of flood(cells,id,true))if(d<=clearRadius)cells[n].water=false;
+  let reachable=flood(cells,bases[0]);const direct=flood(cells,bases[0],true);
+  for(const c of cells){if(c.water||reachable.has(c.id))continue;let at=c.id;
+   while(!reachable.has(at)){cells[at].water=false;at=cells[at].neighbors.find(n=>direct.get(n)<direct.get(at));}
+   reachable=flood(cells,bases[0]);
+  }
  }
- const s={seed,difficulty,mode,map,classic,random,cells,bases,sides:FACTIONS.slice(0,count).map(f=>({...f})),alive:Array(count).fill(true),eliminated:[],units:[],gold:Array(count).fill(100),upgrades:Array.from({length:count},()=>({economy:0,training:0,armor:0})),routes:Array.from({length:count},()=>({key:null,level:0})),elapsed:0,aiTimer:3,aiTimers:Array.from({length:count},(_,i)=>3+i*.35),phase:'ready',winner:null,resultKind:null,tiedSides:[],reason:'',events:[],nextId:1,captures:Array(count).fill(0),builds:Array(count).fill(0),kills:Array(count).fill(0)};
+ const s={seed,difficulty,mode,map,size,cols:COLS,rows:ROWS,duration:sizeSpec.duration,developmentDuration,config:{mode,map,size,development:developmentDuration>0},unitCap:classic?50:40,classic,random,cells,bases,aiStates:Array.from({length:count},(_,side)=>{const personalityKey=['economy','expansion','defense'][(seed+side)%3];return {active:false,stance:'develop',label:AI_STANCES.develop,personality:AI_PERSONALITIES[personalityKey].name,personalityKey,targetSide:null,goal:null,reason:'先建立稳定收入，再组织进军',targetUntil:0,lastDecision:0,hasLaunched:false,launchPower:0,regroupUntil:0};}),sides:FACTIONS.slice(0,count).map(f=>({...f})),alive:Array(count).fill(true),eliminated:[],units:[],gold:Array(count).fill(100),upgrades:Array.from({length:count},()=>({economy:0,training:0,armor:0})),routes:Array.from({length:count},()=>({key:null,level:0})),elapsed:0,aiTimer:3,aiTimers:Array.from({length:count},(_,i)=>3+i*.35),phase:'ready',winner:null,resultKind:null,tiedSides:[],reason:'',events:[],nextId:1,captures:Array(count).fill(0),builds:Array(count).fill(0),kills:Array(count).fill(0)};
  if(classic){for(const c of cells)c.owner=c.water?-1:c.r<7?1:c.r>7?0:c.c<4?1:0;}
+ else if(expanded){
+  // Complete hex rings provide identical buildable area and opening offers for each side.
+  const radius=size==='huge'?3:2,opening=['mine','mystery','archer','tower','mine','barracks'];
+  bases.forEach((id,side)=>{
+   const ring=[...flood(cells,id,true)].filter(([,d])=>d<=radius).sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
+   ring.forEach(([n],i)=>{cells[n].owner=side;cells[n].offer=opening[(i-1+opening.length)%opening.length];});
+  });
+ }
  else{
   // Round-robin expansion guarantees exactly 15 connected opening cells per faction.
   bases.forEach((id,side)=>{cells[id].owner=side;});
@@ -106,7 +146,7 @@ function create(seed=Date.now(),difficulty='normal',options={}){
   else{const opening=['mine','mystery','archer','tower','mine','barracks'];adjacent.forEach((tile,i)=>{tile.offer=opening[i%opening.length];});}
  });
  if(!classic){
-  const candidates=[64,70,67];for(let i=0;i<candidates.length;i++){
+  const centerRow=(ROWS-1)/2,candidates=expanded?[centerRow*COLS+Math.floor(COLS*.23),centerRow*COLS+Math.floor(COLS*.77),centerRow*COLS+mid]:[64,70,67];for(let i=0;i<candidates.length;i++){
    const desired=cells[candidates[i]],c=cells.filter(c=>!c.water&&c.owner===-1&&!c.outpost).sort((a,b)=>distance(a,desired)-distance(b,desired)||a.id-b.id)[0];
    if(c){c.outpost=i===2?'rally':'gold';c.offer=null;}
   }
@@ -179,6 +219,7 @@ function weaponStatus(s,id,key,side=0){
  const c=Number.isInteger(id)?s.cells[id]:null,b=c?.building,spec=own(WEAPONS,key)?WEAPONS[key]:null,e=buildingEffects(b);
  const result={ok:false,reason:'',cost:spec?.cost??0,ammo:b?.type==='arsenal'?(b.ammo??1):0,maxAmmo:b?.type==='arsenal'?e.maxAmmo:3,cooldown:Math.max(0,b?.weaponCooldown||0),range:spec?.range??0,ammoCost:spec?.ammoCost??0};
  if(s.phase!=='playing')result.reason='请先开始对局';
+ else if(inDevelopment(s))result.reason='发展期内不能开火，倒计时结束后统一出征';
  else if(!isAlive(s,side))result.reason='该阵营已被淘汰';
  else if(!validTreasury(s,side))result.reason='金币状态无效';
  else if(!validRoute(s,side))result.reason='路线状态无效';
@@ -229,9 +270,25 @@ function upgrade(s,key,side=0){
  if(key==='armor')for(const u of s.units)if(u.side===side){const ratio=(1+.2*(old+1))/(1+.2*old);u.hp*=ratio;u.maxHp*=ratio;}
  s.events.push({type:'upgrade',side,kind:key,level:old+1});return {ok:true,cost,level:old+1};
 }
-function trainingRate(s,side,c=null){const base=1+.15*(s.upgrades[side]?.training||0)+.12*s.cells.filter(c=>c.owner===side&&c.outpost==='rally').length;return base*routeEffects(s,side).training*(c?buildingEffects(c.building).training*(1+aura(s,side,c).training):1);}
-function spawn(s,c){const side=c.building.side;if(!isAlive(s,side)||s.units.filter(u=>u.side===side).length>=(s.classic?50:40))return;const t=UNIT[c.building.type],e=buildingEffects(c.building),hp=t.hp*(1+.2*s.upgrades[side].armor)*e.hp;s.units.push({id:s.nextId++,side,type:c.building.type,cell:c.id,x:c.x,y:c.y,hp,maxHp:hp,cooldown:.25,moving:null,waypoint:s.classic?7*COLS+(c.c>=4?7:1):null,targetSide:null,goal:null,walk:0,attack:0,traits:{damage:e.damage,speed:e.speed,range:e.range}});}
-function path(s,from,goal){if(!s.cells[from]||!s.cells[goal]||s.cells[goal].water||s.cells[from].water)return null;const queue=[from],prev=new Map([[from,null]]);for(let i=0;i<queue.length;i++){const id=queue[i];if(id===goal)break;for(const n of s.cells[id].neighbors)if(!s.cells[n].water&&!prev.has(n)){prev.set(n,id);queue.push(n);}}if(!prev.has(goal))return null;let step=goal;while(prev.get(step)!==from&&prev.get(step)!==null)step=prev.get(step);return step===from?null:step;}
+function trainingRate(s,side,c=null){const base=1+.15*(s.upgrades[side]?.training||0)+.12*(frameCaches.get(s)?.rally[side]??s.cells.filter(c=>c.owner===side&&c.outpost==='rally').length);return base*routeEffects(s,side).training*(c?buildingEffects(c.building).training*(1+aura(s,side,c).training):1);}
+function spawn(s,c){const side=c.building.side;if(!isAlive(s,side)||s.units.filter(u=>u.side===side).length>=unitLimit(s))return;const t=UNIT[c.building.type],e=buildingEffects(c.building),hp=t.hp*(1+.2*s.upgrades[side].armor)*e.hp;s.units.push({id:s.nextId++,side,type:c.building.type,cell:c.id,x:c.x,y:c.y,hp,maxHp:hp,cooldown:.25,moving:null,waypoint:s.classic&&!s.aiStates?.[side]?.active?7*COLS+(c.c>=4?7:1):null,targetSide:null,goal:null,walk:0,attack:0,traits:{damage:e.damage,speed:e.speed,range:e.range}});}
+function navigation(s){
+ const terrain=s.cells.map(c=>c.water?'1':'0').join('');let cache=navigationCaches.get(s);
+ if(!cache||cache.terrain!==terrain){cache={terrain,fields:new Map()};navigationCaches.set(s,cache);}return cache;
+}
+function distanceField(s,goal){
+ const cache=frameCaches.get(s)?.navigation||navigation(s);let distances=cache.fields.get(goal);
+ if(!distances){distances=new Int16Array(s.cells.length);distances.fill(-1);distances[goal]=0;const queue=[goal];
+  for(let i=0;i<queue.length;i++)for(const n of s.cells[queue[i]].neighbors)if(!s.cells[n].water&&distances[n]<0){distances[n]=distances[queue[i]]+1;queue.push(n);}
+  cache.fields.set(goal,distances);
+ }return distances;
+}
+function path(s,from,goal){
+ if(s.size!=='standard'){
+  if(!Number.isInteger(from)||!Number.isInteger(goal)||!s.cells[from]||!s.cells[goal]||s.cells[from].water||s.cells[goal].water||from===goal)return null;
+  const d=distanceField(s,goal);return d[from]>0?(s.cells[from].neighbors.find(n=>!s.cells[n].water&&d[n]===d[from]-1)??null):null;
+ }
+if(!s.cells[from]||!s.cells[goal]||s.cells[goal].water||s.cells[from].water)return null;const queue=[from],prev=new Map([[from,null]]);for(let i=0;i<queue.length;i++){const id=queue[i];if(id===goal)break;for(const n of s.cells[id].neighbors)if(!s.cells[n].water&&!prev.has(n)){prev.set(n,id);queue.push(n);}}if(!prev.has(goal))return null;let step=goal;while(prev.get(step)!==from&&prev.get(step)!==null)step=prev.get(step);return step===from?null:step;}
 function finish(s,winner,reason,kind){if(s.phase==='over')return;s.phase='over';s.winner=winner;s.reason=reason;s.resultKind=kind||(winner===null?'draw':winner===0?'victory':'defeat');}
 function stats(s,side){const alive=isAlive(s,side),mines=s.cells.filter(c=>c.building?.side===side&&c.building.type==='mine'),outposts=s.cells.filter(c=>c.owner===side&&c.outpost).length,income=alive?(2+mines.reduce((total,c)=>total+3+s.upgrades[side].economy+buildingEffects(c.building).income,0)+s.cells.filter(c=>c.owner===side&&c.outpost==='gold').length*2)*routeEffects(s,side).income:0;return {land:s.cells.filter(c=>c.owner===side&&!c.water).length,gold:Math.floor(s.gold[side]||0),income,units:s.units.filter(u=>u.side===side&&u.hp>0).length,buildings:s.cells.filter(c=>c.building?.side===side).length,outposts,alive};}
 function eliminate(s,side,by){
@@ -242,18 +299,32 @@ function eliminate(s,side,by){
  const survivors=s.alive.map((v,i)=>v?i:-1).filter(i=>i>=0);
  if(survivors.length===1)finish(s,survivors[0],s.classic?'攻破了敌方主城':`${FACTIONS[survivors[0]].name}成为最后存活的阵营！`,survivors[0]===0?'victory':'defeat');
 }
-function damageBuilding(s,c,amount,side){if(s.phase!=='playing'||!c||s.cells[c.id]!==c||!Number.isFinite(amount)||amount<=0)return;const b=c.building;if(!b||b.side===side||!isAlive(s,side))return;b.hp-=amount;c.flash=.3;if(b.hp<=0){const lost=b.side;s.events.push({type:'destroy',cell:c.id,side,defender:lost});c.building=null;c.owner=side;s.captures[side]++;if(b.type==='castle')eliminate(s,lost,side);}}
+function damageBuilding(s,c,amount,side){if(s.phase!=='playing'||inDevelopment(s)||!c||s.cells[c.id]!==c||!Number.isFinite(amount)||amount<=0)return;const b=c.building;if(!b||b.side===side||!isAlive(s,side))return;b.hp-=amount;c.flash=.3;if(b.hp<=0){const lost=b.side;s.events.push({type:'destroy',cell:c.id,side,defender:lost});c.building=null;c.owner=side;s.captures[side]++;if(b.type==='castle')eliminate(s,lost,side);}}
 function chooseGoal(s,u){
+ const command=s.aiStates?.[u.side];
+ if(command?.active){
+  const target=command.stance==='attack'&&!isAlive(s,command.targetSide)?null:s.cells[command.goal];
+  if(target&&!target.water){u.targetSide=command.targetSide;u.goal=target.id;u.waypoint=null;return target.id;}
+ }
  const enemyCastles=s.cells.filter(c=>c.building?.type==='castle'&&c.building.side!==u.side&&isAlive(s,c.building.side));
  if(!enemyCastles.length)return null;
- const distances=flood(s.cells,u.cell);
+ const distances=s.size==='standard'?flood(s.cells,u.cell):{get:id=>{const n=distanceField(s,id)[u.cell];return n<0?undefined:n;},has:id=>distanceField(s,id)[u.cell]>=0};
  const ranked=enemyCastles.map(c=>({c,score:(distances.get(c.id)??999)+(c.building.hp/c.building.maxHp)*3+((u.id+c.building.side*7)%5)*.65})).sort((a,b)=>a.score-b.score);
  let target=ranked[0].c;u.targetSide=target.building.side;
  if(!s.classic){const posts=s.cells.filter(c=>c.outpost&&c.owner!==u.side&&distances.has(c.id)).sort((a,b)=>distances.get(a.id)-distances.get(b.id)||a.id-b.id);if(posts[0]&&(distances.get(posts[0].id)<=5||(u.id%3===0&&distances.get(posts[0].id)<distances.get(target.id))))target=posts[0];}
  u.goal=target.id;return target.id;
 }
-function capture(s,c,side){if(c.building||c.water||c.owner===side)return;const old=c.owner;c.owner=side;c.flash=.5;s.captures[side]++;s.events.push({type:c.outpost?'outpost':'capture',cell:c.id,side,previous:old});}
-function tick(s,dt){
+function capture(s,c,side){if(inDevelopment(s)||c.building||c.water||c.owner===side)return;const old=c.owner;c.owner=side;c.flash=.5;s.captures[side]++;s.events.push({type:c.outpost?'outpost':'capture',cell:c.id,side,previous:old});}
+function indexUnits(s){const context=frameCaches.get(s);if(!context)return;const buckets=new Map();context.unitBuckets=buckets;for(const u of s.units){const key=Math.floor(u.x/3)+','+Math.floor(u.y/3);if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(u);} }
+function moveIndexedUnit(s,u,oldX,oldY){const buckets=frameCaches.get(s)?.unitBuckets;if(!buckets)return;const before=Math.floor(oldX/3)+','+Math.floor(oldY/3),after=Math.floor(u.x/3)+','+Math.floor(u.y/3);if(before===after)return;const old=buckets.get(before),i=old?.indexOf(u);if(i>=0)old.splice(i,1);if(!buckets.has(after))buckets.set(after,[]);buckets.get(after).push(u);}
+function nearestEnemyUnit(s,position,side,range){
+ let best=null,bestDistance=range+1e-12;const buckets=frameCaches.get(s)?.unitBuckets;
+ function inspect(units){for(const u of units){if(u.side===side||!isAlive(s,u.side)||u.hp<=0)continue;const d=distance(position,u);if(d<=range&&(d<bestDistance||d===bestDistance&&u.id<best.id)){best=u;bestDistance=d;}}}
+ if(buckets){for(let y=Math.floor((position.y-range)/3);y<=Math.floor((position.y+range)/3);y++)for(let x=Math.floor((position.x-range)/3);x<=Math.floor((position.x+range)/3);x++)inspect(buckets.get(x+','+y)||[]);}else inspect(s.units);
+ return best;
+}
+function nearestEnemyBuilding(s,position,side,range){let best=null,bestDistance=range+1e-12;for(const c of frameCaches.get(s)?.buildings||s.cells){if(!c.building||c.building.side===side||!isAlive(s,c.building.side))continue;const d=distance(position,c);if(d<=range&&d<bestDistance){best=c;bestDistance=d;}}return best;}
+function advanceTick(s,dt){
  if(s.phase!=='playing'||!Number.isFinite(dt))return;dt=Math.min(Math.max(dt,0),.1);if(dt===0)return;s.elapsed+=dt;
  for(let side=0;side<s.sides.length;side++)if(isAlive(s,side))s.gold[side]+=stats(s,side).income*dt;
  for(const c of s.cells){c.flash=Math.max(0,c.flash-dt);const b=c.building;if(!b||!isAlive(s,b.side))continue;const e=buildingEffects(b);
@@ -266,15 +337,16 @@ function tick(s,dt){
    for(const u of s.units)if(u.side===b.side&&u.hp>0&&distance(c,u)<=e.healRadius+1e-8)u.hp=Math.min(u.maxHp,u.hp+e.heal*dt);
    if(e.buildingHeal>0)for(const tile of s.cells){const other=tile.building;if(other?.side===b.side&&other.hp>0&&distance(c,tile)<=e.healRadius+1e-8)other.hp=Math.min(other.maxHp,other.hp+e.buildingHeal*dt);}
   }
-  if(b.type==='tower'||b.type==='castle'){b.cooldown-=dt;const range=(b.type==='tower'?2.3:1.45)+e.range;const target=s.units.filter(u=>u.side!==b.side&&isAlive(s,u.side)&&u.hp>0&&distance(c,u)<=range).sort((a,z)=>distance(c,a)-distance(c,z))[0];if(target&&b.cooldown<=0){target.hp-=(b.type==='tower'?20:13)*e.damage*routeEffects(s,b.side).towerDamage*directDamage(s,b.side,c);target.attack=.18;b.cooldown=.9/e.attackRate;s.events.push({type:'shot',from:c.id,to:target.id,side:b.side});}}
+  if(!inDevelopment(s)&&(b.type==='tower'||b.type==='castle')){b.cooldown-=dt;const range=(b.type==='tower'?2.3:1.45)+e.range;const target=nearestEnemyUnit(s,c,b.side,range);if(target&&b.cooldown<=0){target.hp-=(b.type==='tower'?20:13)*e.damage*routeEffects(s,b.side).towerDamage*directDamage(s,b.side,c);target.attack=.18;b.cooldown=.9/e.attackRate;s.events.push({type:'shot',from:c.id,to:target.id,side:b.side});}}
  }
+ indexUnits(s);
  for(const u of s.units.slice()){
-  if(u.hp<=0||!isAlive(s,u.side)||s.phase!=='playing')continue;const spec=UNIT[u.type],traits=u.traits||{damage:1,speed:1,range:0},unitRange=spec.range+(traits.range||0);u.cooldown-=dt;u.attack=Math.max(0,u.attack-dt);
-  const target=s.units.filter(v=>v.side!==u.side&&isAlive(s,v.side)&&v.hp>0&&distance(u,v)<=unitRange).sort((a,b)=>distance(u,a)-distance(u,b))[0];
-  const buildings=s.cells.filter(c=>c.building&&c.building.side!==u.side&&isAlive(s,c.building.side)&&distance(u,c)<=unitRange).sort((a,b)=>distance(u,a)-distance(u,b));
-  if(target||buildings.length){if(u.cooldown<=0){if(target){target.hp-=spec.damage*(traits.damage??1)*directDamage(s,u.side,u);target.attack=.2;if(target.hp<=0){s.kills[u.side]++;s.gold[u.side]+=5;}}else damageBuilding(s,buildings[0],spec.damage*(traits.damage??1)*directDamage(s,u.side,u),u.side);u.cooldown=spec.cooldown;s.events.push({type:'hit',x:u.x,y:u.y,side:u.side});}continue;}
+  if(u.hp<=0||!isAlive(s,u.side)||s.phase!=='playing'||inDevelopment(s))continue;const spec=UNIT[u.type],traits=u.traits||{damage:1,speed:1,range:0},unitRange=spec.range+(traits.range||0);u.cooldown-=dt;u.attack=Math.max(0,u.attack-dt);
+  const command=s.aiStates?.[u.side],retreating=command?.active&&command.stance==='regroup'&&s.cells[command.goal]&&distance(u,s.cells[command.goal])>.9;
+  const target=retreating?null:nearestEnemyUnit(s,u,u.side,unitRange),building=target||retreating?null:nearestEnemyBuilding(s,u,u.side,unitRange);
+  if(target||building){if(u.cooldown<=0){if(target){target.hp-=spec.damage*(traits.damage??1)*directDamage(s,u.side,u);target.attack=.2;if(target.hp<=0){s.kills[u.side]++;s.gold[u.side]+=5;}}else damageBuilding(s,building,spec.damage*(traits.damage??1)*directDamage(s,u.side,u),u.side);u.cooldown=spec.cooldown;s.events.push({type:'hit',x:u.x,y:u.y,side:u.side});}continue;}
   if(u.moving===null){capture(s,s.cells[u.cell],u.side);if(u.cell===u.waypoint)u.waypoint=null;const goal=u.waypoint??chooseGoal(s,u);u.moving=goal===null?null:path(s,u.cell,goal);}
-  if(u.moving!==null){const dest=s.cells[u.moving];if(!dest||dest.water){u.moving=null;continue;}const dist=distance(u,dest),step=spec.speed*(traits.speed??1)*dt;if(dist<=step){u.x=dest.x;u.y=dest.y;u.cell=dest.id;u.moving=null;capture(s,dest,u.side);}else{u.x+=(dest.x-u.x)/dist*step;u.y+=(dest.y-u.y)/dist*step;}u.walk+=dt;}
+  if(u.moving!==null){const oldX=u.x,oldY=u.y,dest=s.cells[u.moving];if(!dest||dest.water){u.moving=null;continue;}const dist=distance(u,dest),step=spec.speed*(traits.speed??1)*dt;if(dist<=step){u.x=dest.x;u.y=dest.y;u.cell=dest.id;u.moving=null;capture(s,dest,u.side);}else{u.x+=(dest.x-u.x)/dist*step;u.y+=(dest.y-u.y)/dist*step;}u.walk+=dt;moveIndexedUnit(s,u,oldX,oldY);}
  }
  s.units=s.units.filter(u=>u.hp>0&&isAlive(s,u.side));
  if(s.events.length>80)s.events.splice(0,s.events.length-80);
@@ -283,10 +355,82 @@ function tick(s,dt){
  // Preserve aiTimer for old duel controls; new games run independent staggered clocks.
  if(s.classic){s.aiTimer-=dt;if(s.aiTimer<=0){s.aiTimer=interval;ai(s,1);}}
  else for(let side=1;side<s.sides.length;side++)if(isAlive(s,side)){s.aiTimers[side]-=dt;if(s.aiTimers[side]<=0){s.aiTimers[side]=interval;ai(s,side);}}
- if(s.elapsed+1e-7>=DURATION){const scores=s.sides.filter(f=>isAlive(s,f.id)).map(f=>({side:f.id,land:stats(s,f.id).land})),best=Math.max(...scores.map(x=>x.land));s.tiedSides=scores.filter(x=>x.land===best).map(x=>x.side);const winner=s.tiedSides.length===1?s.tiedSides[0]:null;const reason=s.classic?'时间到，领地更多的一方获胜':winner===null?`时间到，${s.tiedSides.map(i=>FACTIONS[i].name).join('、')}以 ${best} 格并列第一。`:`时间到，${FACTIONS[winner].name}以 ${best} 格领地获胜。`;finish(s,winner,reason,'timeout');}
+ if(s.elapsed+1e-7>=s.duration){const scores=s.sides.filter(f=>isAlive(s,f.id)).map(f=>({side:f.id,land:stats(s,f.id).land})),best=Math.max(...scores.map(x=>x.land));s.tiedSides=scores.filter(x=>x.land===best).map(x=>x.side);const winner=s.tiedSides.length===1?s.tiedSides[0]:null;const reason=s.classic?'时间到，领地更多的一方获胜':winner===null?`时间到，${s.tiedSides.map(i=>FACTIONS[i].name).join('、')}以 ${best} 格并列第一。`:`时间到，${FACTIONS[winner].name}以 ${best} 格领地获胜。`;finish(s,winner,reason,'timeout');}
  if(s.events.length>80)s.events.splice(0,s.events.length-80);
 }
+function tick(s,dt){
+ if(s.phase!=='playing'||!Number.isFinite(dt)||dt<=0)return;
+ const before=inDevelopment(s);
+ if(s.size!=='standard'){
+  const buildings=s.cells.filter(c=>c.building),beacons=buildings.filter(c=>c.building.type==='beacon'),rally=s.sides.map(f=>s.cells.filter(c=>c.owner===f.id&&c.outpost==='rally').length);
+  frameCaches.set(s,{buildings,beacons,rally,navigation:navigation(s)});
+ }
+ try{advanceTick(s,dt);}finally{frameCaches.delete(s);}
+ if(before&&!inDevelopment(s)){s.events.push({type:'developmentEnd'});if(s.events.length>80)s.events.splice(0,s.events.length-80);}
+}
+// Decisions consume the same treasury and obey the same construction/upgrade APIs as a human.
+// Intent changes at the difficulty's visible reaction interval; units keep that order between decisions.
+function armyPower(units){return units.reduce((sum,u)=>sum+(u.type==='knight'?2.4:u.type==='archer'?.85:1)*Math.max(.2,u.hp/u.maxHp),0);}
+function updateAiIntent(s,side,owned,forces){
+ const state=s.aiStates[side],personality=AI_PERSONALITIES[state.personalityKey],base=s.cells[s.bases[side]],power=armyPower(forces);
+ state.active=true;state.lastDecision=s.elapsed;
+ const hostiles=s.units.filter(u=>u.side!==side&&isAlive(s,u.side)&&u.hp>0),threats=hostiles.filter(u=>(s.cells[u.cell]?.owner===side&&distance(u,base)<4.6)||owned.some(c=>distance(c,u)<(UNIT[u.type]?.range||.9)+.3));
+ const threat=threats.slice().sort((a,b)=>distance(a,base)-distance(b,base)||a.id-b.id)[0],threatPower=armyPower(threats);
+ const castles=s.cells.filter(c=>c.building?.type==='castle'&&c.building.side!==side&&isAlive(s,c.building.side));
+ if(!isAlive(s,state.targetSide)||s.elapsed>=state.targetUntil){
+  const ranked=castles.map(c=>({cell:c,score:distance(base,c)+(c.building.hp/c.building.maxHp)*2+((s.seed+side*11+c.building.side*7)%7)*.6})).sort((a,b)=>a.score-b.score||a.cell.id-b.cell.id);
+  state.targetSide=ranked[0]?.cell.building.side??null;state.targetUntil=s.elapsed+18;
+ }
+ const enemy=s.cells[s.bases[state.targetSide]],forward=enemy||s.cells[Math.floor(s.rows/2)*s.cols+Math.floor(s.cols/2)];
+ const friendly=s.cells.filter(c=>c.owner===side&&!c.water),rally=friendly.filter(c=>distance(c,base)<=(s.size==='standard'?1.1:2.2)).sort((a,b)=>distance(a,forward)-distance(b,forward)||a.id-b.id)[0]||base;
+ const shelter=owned.filter(c=>c.building.type==='tower'&&distance(c,base)<3.3).sort((a,b)=>distance(a,base)-distance(b,base))[0]||base;
+ const threshold=s.classic?Math.max(3,personality.gather-3):personality.gather;
+ let stance,goal,reason;
+ if(inDevelopment(s)){stance='develop';goal=rally.id;reason='发展期内经营与训练，结束后先集结';}
+ else if(threat){
+  if(threatPower>Math.max(2,power)*1.3){stance='regroup';goal=shelter.id;reason='来敌占优，退至主城或守卫塔附近固守';state.regroupUntil=s.elapsed+12;}
+  else{stance='defend';goal=threat.cell;reason='发现领地受袭，现有部队转向拦截';}
+ }
+ else if(state.hasLaunched&&power<Math.max(2,state.launchPower*.38)){
+  stance='regroup';goal=shelter.id;reason='前线兵力损失较大，收缩补兵后再出击';if(state.stance!=='regroup')state.regroupUntil=s.elapsed+12;state.hasLaunched=false;
+ }
+ else if(s.elapsed<state.regroupUntil){stance='regroup';goal=shelter.id;reason='暂时守住据点，等待增援重新成军';}
+ else if(enemy&&(power>=threshold||state.hasLaunched&&power>=2||(s.elapsed>Math.max(35,s.developmentDuration+22)&&power>=2))){
+  stance='attack';goal=enemy.id;reason='兵力已成形，持续向选定对手推进';
+  const posts=s.cells.filter(c=>c.outpost&&c.owner!==side&&distance(base,c)<distance(base,enemy)+2).sort((a,b)=>distance(base,a)-distance(base,b)||a.id-b.id);
+  if(posts[0]){goal=posts[0].id;reason='先夺取沿途据点，再向选定对手推进';}
+  if(!state.hasLaunched){state.hasLaunched=true;state.launchPower=power;}
+ }
+ else{stance=owned.filter(c=>c.building.type==='mine').length<2?'develop':'gather';goal=rally.id;reason=stance==='develop'?'优先补足金矿与基本兵营':'兵力尚少，先在己方前沿集结';}
+ state.stance=stance;state.label=AI_STANCES[stance];state.goal=goal;state.reason=reason;
+ for(const u of forces)u.waypoint=null;
+ return {state,personality,base,threat,forces,power,owned};
+}
 function ai(s,side=1){
+ if(s.phase!=='playing'||!isAlive(s,side)||!validTreasury(s,side)||!validRoute(s,side))return;
+ const owned=s.cells.filter(c=>c.building?.side===side),forces=s.units.filter(u=>u.side===side&&u.hp>0),decision=updateAiIntent(s,side,owned,forces),free=available(s,side),mines=owned.filter(c=>c.building.type==='mine').length,army=owned.filter(c=>UNIT[c.building.type]).length;
+ function construct(type,defensive=false){
+  if(s.gold[side]+1e-8<TYPES[type].cost||!free.length)return false;
+  const anchor=defensive?(decision.threat||decision.base):decision.base;
+  const c=free.slice().sort((a,b)=>distance(a,anchor)-distance(b,anchor)||a.id-b.id)[0];return purchase(s,c.id,side,type).ok;
+ }
+ // A threatened faction spends on a real defense instead of continuing a mine-only script.
+ if(decision.threat&&!inDevelopment(s)){
+  const nearbyTower=owned.some(c=>c.building.type==='tower'&&distance(c,decision.threat)<3.6);
+  if(!nearbyTower&&construct('tower',true))return;
+  if(army<3&&construct(army<1?'barracks':'archer',true))return;
+ }
+ // Each call makes at most one paid decision. Waiting deliberately saves for a planned building.
+ if(mines<2){construct('mine');return;}
+ if(army<2){construct(army===0?'barracks':'archer');return;}
+ // Preserve the existing six technology purchases and fully paid route/support/branch systems.
+ // With a real economy online these investments compete with more camps for the same gold.
+ if(!s.classic){const order=['economy','training','armor'];for(const key of order){const cost=upgradeCost(s,key,side);if(cost!==null&&s.gold[side]>=cost+50&&s.upgrades[side][key]<1+(s.elapsed>90)){upgrade(s,key,side);return;}}}
+ if(mines<decision.personality.mines&&construct('mine'))return;
+ if(army<(decision.state.personalityKey==='defense'?3:4)&&s.gold[side]<180){if(construct(army%2?'archer':'barracks'))return;}
+ investAi(s,side);
+}
+function investAi(s,side=1){
  if(s.phase!=='playing'||!isAlive(s,side)||!validTreasury(s,side)||!validRoute(s,side))return;
  const free=available(s,side),owned=s.cells.filter(c=>c.building?.side===side),mines=owned.filter(c=>c.building.type==='mine').length,army=owned.filter(c=>UNIT[c.building.type]).length;
  let choices=free.filter(c=>own(TYPES,c.offer)&&c.offer!=='arsenal'&&TYPES[c.offer].cost<=s.gold[side]);
@@ -294,7 +438,7 @@ function ai(s,side=1){
  if(!s.classic&&army>=2){const order=mines>=2?['economy','training','armor']:['training','armor'];for(const key of order){const cost=upgradeCost(s,key,side);if(cost!==null&&s.gold[side]>=cost+50&&s.upgrades[side][key]<1+(s.elapsed>90)){upgrade(s,key,side);return;}}}
  const route=routeState(s,side);
  if(mines>=2&&army>=2&&s.elapsed>=25){
-  if(route.key===null&&s.gold[side]>=routeCost(s,side)+100){chooseRoute(s,['economy','defense','offense'][(s.seed+side)%3],side);return;}
+  if(route.key===null&&s.gold[side]>=routeCost(s,side)+100){chooseRoute(s,AI_PERSONALITIES[s.aiStates?.[side]?.personalityKey]?.route||['economy','defense','offense'][(s.seed+side)%3],side);return;}
   if(route.key!==null&&route.level===1&&s.elapsed>100&&s.gold[side]>=routeCost(s,side)+100){upgradeRoute(s,side);return;}
  }
  if(mines>=2&&army>=3&&s.elapsed>35&&free.length){
@@ -312,5 +456,5 @@ function ai(s,side=1){
  function score(c){let v=s.random()*2;if(c.offer==='mine')v+=mines<2?12:mines<4?5:0;if(c.offer==='barracks')v+=army<2?10:5;if(c.offer==='mystery')v+=4;if(c.offer==='knight')v+=7;if(c.offer==='archer')v+=6;if(c.offer==='tower')v+=s.units.some(u=>u.side!==side&&isAlive(s,u.side)&&distance(c,u)<3)?12:1;return v;}
  if(choices.length)purchase(s,choices[0].id,side);
 }
-return {COLS,ROWS,DURATION,FACTIONS,MODES,MAPS,TYPES,UNIT,UPGRADES,ROUTES,BUILDING_UPGRADES,WEAPONS,create,available,purchase,upgrade,upgradeCost,chooseRoute,upgradeRoute,routeCost,upgradeBuilding,buildingUpgradeCost,weaponStatus,previewWeapon,fireWeapon,buildingEffects,trainingRate,tick,stats,ai,path,finish,neighborsIndex,distance,damageBuilding,chooseGoal};
+return {COLS,ROWS,DURATION,SIZES,AI_PERSONALITIES,AI_STANCES,developmentRemaining,inDevelopment,unitLimit,FACTIONS,MODES,MAPS,TYPES,UNIT,UPGRADES,ROUTES,BUILDING_UPGRADES,WEAPONS,create,available,purchase,upgrade,upgradeCost,chooseRoute,upgradeRoute,routeCost,upgradeBuilding,buildingUpgradeCost,weaponStatus,previewWeapon,fireWeapon,buildingEffects,trainingRate,tick,stats,ai,path,finish,neighborsIndex,distance,damageBuilding,chooseGoal};
 });
