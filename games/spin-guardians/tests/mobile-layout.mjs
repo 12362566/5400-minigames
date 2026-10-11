@@ -89,6 +89,11 @@ for(const[w,h]of mobile){
   assert.equal(name['grid-column'],'1');assert.equal(name['grid-row'],'2');assert.equal(name['white-space'],'nowrap');assert.equal(name['min-width'],'0');
   assert.equal(cost['grid-column'],'2');assert.equal(cost['grid-row'],'2');assert.equal(cost.float,'none');assert.equal(cost['justify-self'],'end');assert.equal(cost['white-space'],'nowrap');
  });
+ check(`${w}×${h} compact expedition action row`,()=>{
+  const actions=cascade('.command-actions',w,h),start=cascade('.command-actions .start-btn',w,h),build=cascade('.build-btn',w,h),active=cascade('.active-btn',w,h);
+  assert.equal(actions.display,'grid');assert.equal(actions['grid-template-columns'],w<=360?'minmax(0,1fr) 57px 57px':'minmax(0,1fr) 64px 64px');
+  assert.equal(start.height,'44px');assert.equal(build['min-height'],'44px');assert.equal(active['min-height'],'44px');
+ });
  console.log(`${w}×${h} cascade: columns=${layout['grid-template-columns']}; align=${layout['align-items']}; child rows=${battle['grid-row']||'auto'}/${command['grid-row']||'auto'}`);
 }
 for(const[w,h,columns]of[[761,1000,'minmax(0,530px) minmax(270px,1fr)'],[1280,900,'490px 1fr']])check(`${w}px desktop preserved`,()=>{

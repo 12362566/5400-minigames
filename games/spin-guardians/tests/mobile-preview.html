@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>旋刃守卫 · 手机布局检验</title><style>:root{color-scheme:only light}*{box-sizing:border-box}body{margin:0;padding:20px;font:14px system-ui,sans-serif;color:#203b34;background:#e5e7dc}h1{font-size:20px;margin:0 0 8px}p{max-width:680px;font-size:12px;line-height:1.8;color:#68786b}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}button{min-height:44px;padding:10px 15px;border:1px solid #a2b292;border-radius:8px;background:#f6f6e8;color:#355142;cursor:pointer}button[aria-pressed=true]{background:#285941;color:white}.device{display:inline-block;padding:8px;background:#1c2b25;border-radius:22px;box-shadow:0 15px 30px #17251f22}iframe{display:block;width:390px;height:844px;border:0;border-radius:14px;background:#f5f4e9}#status{font-weight:700;font-size:12px}a{color:#285941}</style></head><body><h1>手机真实 CSS 视口检验</h1><p>内嵌的是正式游戏页面，使用浏览器原生窄视口运行同一份 CSS 和交互。这能验证响应式布局；它不模拟触屏硬件、刘海安全区、浏览器地址栏或设备性能。存档使用当前浏览器的本机存储。</p><div class="controls"><button data-size="390,844" aria-pressed="true">390 × 844</button><button data-size="320,568" aria-pressed="false">320 × 568</button><button data-size="410,820" aria-pressed="false">410 × 820</button><button data-size="430,932" aria-pressed="false">430 × 932</button><button data-size="760,844" aria-pressed="false">760 × 844</button><button data-size="900,844" aria-pressed="false">900 × 844</button></div><p id="status">游戏视口：390 × 844 CSS px</p><pre id="diagnostics" aria-live="polite" style="white-space:pre-wrap;font-size:12px;line-height:1.5">正在检查真实布局…</pre><button id="recheck">重新检查布局</button><div class="device"><iframe id="game" title="旋刃守卫手机视口" src="../index.html?mobile-qa=1.2.1"></iframe></div><p><a href="../index.html">打开正式游戏 ↗</a> · <a href="../../../index.html">返回小游戏合集</a></p><script>
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>旋刃守卫 2.0 · 手机布局检验</title><style>:root{color-scheme:only light}*{box-sizing:border-box}body{margin:0;padding:20px;font:14px system-ui,sans-serif;color:#203b34;background:#e5e7dc}h1{font-size:20px;margin:0 0 8px}p{max-width:680px;font-size:12px;line-height:1.8;color:#68786b}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}button{min-height:44px;padding:10px 15px;border:1px solid #a2b292;border-radius:8px;background:#f6f6e8;color:#355142;cursor:pointer}button[aria-pressed=true]{background:#285941;color:white}.device{display:inline-block;padding:8px;background:#1c2b25;border-radius:22px;box-shadow:0 15px 30px #17251f22}iframe{display:block;width:390px;height:844px;border:0;border-radius:14px;background:#f5f4e9}#status{font-weight:700;font-size:12px}a{color:#285941}</style></head><body><h1>手机真实 CSS 视口检验</h1><p>内嵌的是正式游戏页面，使用浏览器原生窄视口运行同一份 CSS 和交互。这能验证响应式布局；它不模拟触屏硬件、刘海安全区、浏览器地址栏或设备性能。存档使用当前浏览器的本机存储。</p><div class="controls"><button data-size="390,844" aria-pressed="true">390 × 844</button><button data-size="320,568" aria-pressed="false">320 × 568</button><button data-size="410,820" aria-pressed="false">410 × 820</button><button data-size="430,932" aria-pressed="false">430 × 932</button><button data-size="760,844" aria-pressed="false">760 × 844</button><button data-size="900,844" aria-pressed="false">900 × 844</button></div><p id="status">游戏视口：390 × 844 CSS px</p><pre id="diagnostics" aria-live="polite" style="white-space:pre-wrap;font-size:12px;line-height:1.5">正在检查真实布局…</pre><button id="recheck">重新检查布局</button><div class="device"><iframe id="game" title="旋刃守卫手机视口" src="../index.html?mobile-qa=2.0"></iframe></div><p><a href="../index.html">打开正式游戏 ↗</a> · <a href="../../../index.html">返回小游戏合集</a></p><script>
 const frame=document.getElementById('game');
 const diagnostics=document.getElementById('diagnostics');
 function inspectLayout(){
@@ -10,11 +10,25 @@ function inspectLayout(){
     const mobile=w.innerWidth<=760;
     const tracks=gr.gridTemplateColumns.trim().split(/\s+/).length;
     const cards=[...d.querySelectorAll('.hero-card')];
+    const actionButtons=[...d.querySelectorAll('.command-actions button')].filter(button=>!button.hidden&&w.getComputedStyle(button).display!=='none');
+    const actionRects=actionButtons.map(button=>button.getBoundingClientRect());
+    const actionsFit=actionRects.length>=2&&actionRects.every(r=>r.width>0&&r.left>=-1&&r.right<=w.innerWidth+1);
+    const actionsSeparate=actionRects.every((a,i)=>actionRects.every((b,j)=>i===j||Math.min(a.right,b.right)-Math.max(a.left,b.left)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=1));
+    const modal=d.querySelector('dialog[open]'),mr=modal?.getBoundingClientRect();
+    const dialogFits=!modal||(mr.left>=-1&&mr.top>=-1&&mr.right<=w.innerWidth+1&&mr.bottom<=w.innerHeight+1);
+    const dialogScrollable=!modal||modal.scrollHeight<=modal.clientHeight+1||/auto|scroll/.test(w.getComputedStyle(modal).overflowY);
     const cardLabelsFit=cards.length>0&&cards.every(card=>{const box=card.getBoundingClientRect();return [...card.querySelectorAll('.hero-name,.cost')].every(label=>{const r=label.getBoundingClientRect();return r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1})});
     const checks=[
       ['招募名称与价格完整处于卡片内',cardLabelsFit],
+      ['仅一个构筑入口',d.querySelectorAll('#buildBtn').length===1],
+      ['主动技能与开始按钮同行',d.getElementById('activeBtn').hidden||Math.abs(d.getElementById('startBtn').getBoundingClientRect().top-d.getElementById('activeBtn').getBoundingClientRect().top)<1],
+      ['战斗/构筑/主动操作保持44px高度',[...d.querySelectorAll('.command-actions button')].filter(b=>!b.hidden).every(b=>b.getBoundingClientRect().height>=44)],
       ['视口与预设尺寸一致',w.innerWidth===parseInt(frame.style.width||390)&&w.innerHeight===parseInt(frame.style.height||844)],
       ['无横向溢出',d.documentElement.scrollWidth<=w.innerWidth],
+      ['开波/构筑/主动按钮无横向溢出',actionsFit],
+      ['开波/构筑/主动按钮互不重叠',actionsSeparate],
+      ['打开的弹窗处于视口内',dialogFits],
+      ['弹窗内容超高时允许滚动',dialogScrollable],
       ['画布保持 9:11 比例',cv.width>0&&cv.height>0&&Math.abs(cv.width/cv.height-9/11)<.015],
       ['画布处于视口横向范围',cv.left>=-1&&cv.right<=w.innerWidth+1]
     ];
@@ -28,7 +42,8 @@ function inspectLayout(){
   }catch(error){diagnostics.textContent='等待检查：'+error.message}
 }
 function scheduleCheck(){requestAnimationFrame(()=>requestAnimationFrame(inspectLayout))}
-frame.addEventListener('load',scheduleCheck);
+let modalObserver;
+frame.addEventListener('load',()=>{scheduleCheck();modalObserver?.disconnect();try{modalObserver=new MutationObserver(scheduleCheck);const dialog=frame.contentDocument.getElementById('modal');if(dialog)modalObserver.observe(dialog,{attributes:true,childList:true,subtree:true,attributeFilter:['open']})}catch{}});
 document.getElementById('recheck').onclick=scheduleCheck;
 document.querySelectorAll('[data-size]').forEach(button=>button.onclick=()=>{
  const [w,h]=button.dataset.size.split(',').map(Number);
