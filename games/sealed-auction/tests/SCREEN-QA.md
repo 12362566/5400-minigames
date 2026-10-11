@@ -51,3 +51,12 @@ Check each preset in bidding and round/lot result phases. Also check the 320 × 
 8. Rotate between portrait/landscape and restore portrait while both bidding and a drawer are open. Check no stranded scroll position or clipped primary button.
 
 Real devices still need manual address-bar collapse, safe-area/notch and keyboard testing. The 390 × 480 frame validates reduced layout height; it cannot reproduce the full browser's virtual-keyboard viewport policy or OS overlays. Do not claim those checks passed solely from the fixture or Node tests.
+
+
+## Recorded browser result — 2026-10-11
+
+Runtime commit `c1ebd364cd1bb90858836c3262203159e5a90a42` / asset version `1.1.0` was tested on public GitHub Pages using the fixture above. All six presets passed in both bidding and ending states with zero issues and document scroll dimensions equal to client dimensions. All five lot settlements passed while naturally playing a complete game. This is actual browser geometry, not the VM test harness.
+
+Observed interactions include all five rail panels, internal catalog scrolling (568px client height,1111px scroll height,495px internal scroll; root remained0), drawer rotation, close/Escape focus return, typed draft preservation after confirmed scan purchase, over-balance rejection, full-balance cancel, normal bid, five-round bidding, early settlement, next-lot from a settlement drawer, reload/continue, complete ledger, inspect-last/return-to-ending, replay and return home. The 320×568 and568×320 landing pages also kept all role and continue/new-game buttons in view. See `../QA.md` for values and exact observations.
+
+No runtime fixes were needed after this browser pass. Physical mobile keyboard, safe-area and address-bar behavior remain unverified; the reduced-height frame is only a layout approximation.
