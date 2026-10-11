@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#142c2c">
+<title>旋刃守卫 · 林间远征</title><meta name="description" content="合成旋刃英雄，击破宝蛋，守住林间小径。原创手机策略塔防与肉鸽远征。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<header class="topbar"><a class="brand" href="#" aria-label="旋刃守卫首页"><span class="brand-mark">✦</span><span>旋刃守卫<small>WOODLAND EXPEDITION</small></span></a><div class="top-actions"><a class="collection-link" href="../../index.html" aria-label="返回小游戏合集">‹ 合集</a><button id="helpBtn" class="icon-btn" aria-label="玩法说明">?</button><button id="settingsBtn" class="icon-btn" aria-label="设置与重开">☰</button></div></header>
+<main class="game-layout">
+<section class="battle-column" aria-label="战场">
+<div class="expedition-head"><div><span class="eyebrow" id="stageLabel">CHAPTER 01 / 晨露林地</span><h1 id="waveTitle">守住这条小径。</h1></div><button class="wave-pill" id="waveLabel" aria-label="查看本波敌情">第 1 / 8 波 ↗</button></div>
+<div class="resource-bar"><div><span class="resource-icon gold">◆</span><strong id="gold">180</strong><small>金币</small></div><div><span class="resource-icon heart">♥</span><strong id="lives">20</strong><small>营地</small></div><div><span class="resource-icon kill">✦</span><strong id="kills">0</strong><small>击破</small></div><button id="speedBtn" class="speed-btn" title="切换战斗速度">1×</button><button id="pauseBtn" class="pause-btn" aria-label="暂停">Ⅱ</button></div>
+<div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="点击英雄卡，再点击高亮草地部署。点击已部署英雄可移动或合成。" tabindex="0"></canvas><div class="board-badge" id="boardBadge"><span class="status-dot"></span>部署准备</div><div class="board-hint" id="boardHint">先选一位守卫，再点亮起的草地</div><div class="pause-veil" id="pauseVeil" hidden><span>休息一下</span><button id="resumeBtn" class="primary">继续远征</button></div></div>
+<div class="battle-footer"><span id="enemyStatus">敌人即将从入口出发</span><span id="saveStatus">本机自动存档</span></div>
+</section>
+<aside class="command-column">
+<div class="section-heading"><div><span class="eyebrow">YOUR GUARDIANS</span><h2 id="guardiansTitle">组建你的防线</h2></div><button class="text-btn" id="clearBtn" hidden>取消选择</button></div>
+<div class="hero-shop" id="heroShop" aria-label="招募守卫"></div>
+<div class="context-row"><section class="context-panel" id="contextPanel" aria-live="polite"></section><button class="merge-action" id="mergeBtn" hidden>合成预览</button></div>
+<button class="primary start-btn" id="startBtn"><span>开始第 1 波</span><span>→</span></button>
+<div class="relic-section"><div class="mini-heading"><span>远征祝福</span><span id="relicCount">0 / 3</span></div><div id="relicList" class="relic-list"><p class="empty-relic">每逢第 2、4、6 波后，三选一构筑你的流派。</p></div></div>
+<div class="strategy-note"><span>✧</span><p>同种同级守卫可合成。旋刃也会击破宝蛋，为你孵出新的守卫。</p></div>
+<footer class="credits">原创演绎 · 旋刃合成 × 路线塔防<br><button id="aboutBtn" class="text-btn">灵感与制作说明 ↗</button></footer>
+</aside>
+</main>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<dialog id="modal"><div id="modalContent"></div></dialog>
+<script type="module" src="app.js"></script>
+</body>
+</html>
