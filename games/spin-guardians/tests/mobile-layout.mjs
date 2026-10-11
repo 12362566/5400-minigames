@@ -46,8 +46,8 @@ function cascade(selector,width,height){
   order++;
   // Our audited layout properties are declared directly on simple class selectors
   // or *. Fail closed if a new shorthand could invalidate the explicit properties.
-  const matched=rule.selectors.filter(s=>s===selector||s==='*');if(!matched.length)continue;
-  const specificity=matched.includes(selector)?10:0;
+  const matched=rule.selectors.filter(s=>s===selector||s==='*'||(selector==='.hero-card.selected'&&s==='.hero-card'));if(!matched.length)continue;
+  const specificity=Math.max(...matched.map(s=>(s.match(/\./g)||[]).length*10));
   for(const declaration of rule.body.split(';')){
    const colon=declaration.indexOf(':');if(colon<0)continue;
    const name=declaration.slice(0,colon).trim();let value=declaration.slice(colon+1).trim();
@@ -75,6 +75,19 @@ for(const[w,h]of mobile){
   assert.equal(command['grid-column'],'1');assert.equal(command['grid-row'],'2');
   for(const item of[battle,command]){assert.equal(item['align-self'],'stretch');assert.equal(item['min-width'],'0');}
   assert.equal(battle['min-height'],'0');assert.equal(board['min-height'],'0');assert.equal(board.flex,'1');
+ });
+ check(`${w}×${h} hero card shared label/price row`,()=>{
+  const card=cascade('.hero-card',w,h),selected=cascade('.hero-card.selected',w,h);
+  const portrait=cascade('.hero-card .hero-portrait',w,h),name=cascade('.hero-card .hero-name',w,h),cost=cascade('.hero-card .cost',w,h);
+  assert.equal(card.display,'grid','cards must not wrap the floated cost beneath the label');
+  assert.equal(card['grid-template-columns'],'minmax(0,1fr) auto');
+  assert.equal(card['grid-template-rows'],'1fr 16px');assert.equal(card['column-gap'],'1px');
+  assert.equal(card.padding,'5px 4px');assert.equal(selected.padding,'4px 3px');
+  assert.equal(card.height,h<=650?'61px':'67px','fixed cockpit card height must remain stable');
+  assert.equal(selected.height,card.height);assert.equal(selected.display,'grid');
+  assert.equal(portrait['grid-column'],'1/-1');assert.equal(portrait['grid-row'],'1');
+  assert.equal(name['grid-column'],'1');assert.equal(name['grid-row'],'2');assert.equal(name['white-space'],'nowrap');assert.equal(name['min-width'],'0');
+  assert.equal(cost['grid-column'],'2');assert.equal(cost['grid-row'],'2');assert.equal(cost.float,'none');assert.equal(cost['justify-self'],'end');assert.equal(cost['white-space'],'nowrap');
  });
  console.log(`${w}×${h} cascade: columns=${layout['grid-template-columns']}; align=${layout['align-items']}; child rows=${battle['grid-row']||'auto'}/${command['grid-row']||'auto'}`);
 }
