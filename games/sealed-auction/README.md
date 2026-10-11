@@ -35,7 +35,7 @@ node --check art.js
 node --check engine.js
 ```
 
-引擎测试无需 npm 包。测试使用 Node 内置测试运行器（Node 18+；Node 24 可直接加载运行文件）。
+引擎测试无需 npm 包。测试使用 Node 内置测试运行器（使用 Node 24）。
 
 `tests/mobile-preview.html` 使用真实同源 iframe 提供 320/390/410 CSS 像素宽度，避免仅改变外层截图大小。打开后选宽度，完成正常操作，点“检查布局”检查实际文档宽度与网格列数。
 
