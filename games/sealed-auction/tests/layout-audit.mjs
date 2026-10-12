@@ -25,7 +25,7 @@ export function outside(inner, outer, tolerance = TOLERANCE) {
   };
 }
 const anySide = sides => Object.values(sides).some(Boolean);
-const elementName = element => element.id ? `#${element.id}` : element.dataset.action ? `[data-action="${element.dataset.action}"]` : `${element.tagName.toLowerCase()}.${[...element.classList].join('.')}`;
+const elementName = element => element.id ? `#${element.id}` : element.dataset.action ? `[data-action="${element.dataset.action}"]` : element.dataset.bidAmount ? `[data-bid-amount="${element.dataset.bidAmount}"]` : element.dataset.bidAdjust ? `[data-bid-adjust="${element.dataset.bidAdjust}"]` : element.dataset.quick ? `[data-quick="${element.dataset.quick}"]` : `${element.tagName.toLowerCase()}.${[...element.classList].join('.')}`;
 const metrics = element => ({
   clientWidth: element.clientWidth, clientHeight: element.clientHeight,
   scrollWidth: element.scrollWidth, scrollHeight: element.scrollHeight,
@@ -59,7 +59,7 @@ export function auditWindow(window, requestedViewport) {
       overflowY: Math.max(html.scrollHeight, body.scrollHeight) > html.clientHeight + TOLERANCE,
       scrollX: window.scrollX, scrollY: window.scrollY
     },
-    regions: {}, hudParts: {}, hudOverlaps: [], overlaps: [], sidebarButtons: [], bidControls: [], endingControls: [], warehouseItems: [], dialogs: [], issues, warnings
+    regions: {}, regionContainment: {}, hudParts: {}, hudOverlaps: [], overlaps: [], sidebarButtons: [], bidControls: [], bidControlOverlaps: [], fastBidControls: {}, bidReadouts: {}, primaryAction: null, endingControls: [], warehouseItems: [], dialogs: [], issues, warnings
   };
   if (requestedViewport && (window.innerWidth !== requestedViewport.width || window.innerHeight !== requestedViewport.height)) {
     issues.push('实际 iframe 视口不等于所选尺寸；本次不能代表所选设备。');
@@ -77,7 +77,15 @@ export function auditWindow(window, requestedViewport) {
     if (inGame && required && !report.regions[name]) issues.push(`缺少可见区域：${selectors[name]}`);
     if (inGame && report.regions[name] && anySide(outside(report.regions[name], viewport))) issues.push(`区域超出可见视口：${selectors[name]}`);
   }
-  const mainPairs = [['hud', 'warehouse'], ['hud', 'rail'], ['hud', 'bid'], ['warehouse', 'rail'], ['warehouse', 'bid'], ['rail', 'bid'], ['ending', 'rail'], ['ending', 'hud']];
+  if (inGame && !ending && report.regions.main) {
+    for (const name of ['stage', 'warehouse', 'bid']) {
+      if (!report.regions[name]) continue;
+      const sides = outside(report.regions[name], report.regions.main);
+      report.regionContainment[name] = sides;
+      if (anySide(sides)) issues.push(`区域超出主内容区 .play-main：${selectors[name]}`);
+    }
+  }
+  const mainPairs = [['hud', 'warehouse'], ['hud', 'rail'], ['hud', 'bid'], ['stage', 'rail'], ['stage', 'bid'], ['warehouse', 'rail'], ['warehouse', 'bid'], ['rail', 'bid'], ['ending', 'rail'], ['ending', 'hud']];
   for (const [a, b] of mainPairs) {
     const first = report.regions[a], second = report.regions[b];
     if (first && second && intersects(first, second)) {
@@ -126,10 +134,55 @@ export function auditWindow(window, requestedViewport) {
   for (const control of document.querySelectorAll('.bid-dock input, .bid-dock button, .bid-dock select, .bid-dock a')) {
     if (!visible(control)) continue;
     const info = controlBounds(control);
+    info.minimum44 = info.rect.width >= 44 && info.rect.height >= 44;
+    info.outsideMain = report.regions.main ? outside(info.rect, report.regions.main) : null;
     report.bidControls.push(info);
     if (inGame && (anySide(info.viewportOverflow) || info.clippedBy.length)) issues.push(`报价区控件不可完整触达：${info.name}`);
+    if (inGame && info.outsideMain && anySide(info.outsideMain)) issues.push(`报价区控件超出主内容区：${info.name}`);
+    if (inGame && regions.bid?.classList.contains('fast-bid-dock') && !info.minimum44) issues.push(`快捷报价触控目标小于 44×44：${info.name}`);
   }
   if (inGame && !ending && !report.bidControls.length) issues.push('报价区没有可见的操作控件。');
+  for (let first = 0; first < report.bidControls.length; first++) {
+    for (let second = first + 1; second < report.bidControls.length; second++) {
+      const a = report.bidControls[first], b = report.bidControls[second];
+      if (!intersects(a.rect, b.rect)) continue;
+      report.bidControlOverlaps.push([a.name, b.name]);
+      if (inGame) issues.push(`报价控件重叠：${a.name} / ${b.name}`);
+    }
+  }
+  if (inGame && !ending) {
+    const primary = document.querySelector('.bid-dock .primary');
+    report.primaryAction = visible(primary) ? controlBounds(primary) : null;
+    if (!report.primaryAction) issues.push('报价或结算区缺少可见的主要操作按钮。');
+    else if (anySide(report.primaryAction.viewportOverflow) || report.primaryAction.clippedBy.length) issues.push('主要操作按钮不可完整触达。');
+  }
+  const bidding = !!document.querySelector('#bid-form');
+  if (inGame && !ending && bidding) {
+    const required = {
+      presets: ['.bid-dock [data-bid-amount]', 3], adjustments: ['.bid-dock [data-bid-adjust]', 4],
+      ownPrevious: ['.bid-dock [data-quick="own"]', 1], exact: ['.bid-dock [data-action="exact-bid"]', 1],
+      submit: ['.bid-dock #bid-submit', 1], pass: ['.bid-dock [data-action="pass"]', 1]
+    };
+    for (const [name, [selector, expected]] of Object.entries(required)) {
+      const controls = [...document.querySelectorAll(selector)].filter(visible);
+      report.fastBidControls[name] = controls.map(controlBounds);
+      if (controls.length !== expected) issues.push(`快捷报价缺少始终可见的控件：${name}（${controls.length}/${expected}）`);
+    }
+    for (const selector of ['#bid-amount', '#bid-wan']) {
+      const readout = document.querySelector(selector);
+      const info = visible(readout) ? controlBounds(readout) : null;
+      report.bidReadouts[selector] = info;
+      if (!info) issues.push(`缺少可见的报价金额读数：${selector}`);
+      else if (anySide(info.viewportOverflow) || info.clippedBy.length || (report.regions.main && anySide(outside(info.rect, report.regions.main)))) issues.push(`报价金额读数被裁切或超出主内容区：${selector}`);
+    }
+    // A shallow landscape must use the width; hiding overflow is not a valid replacement.
+    if (window.innerWidth === 568 && window.innerHeight === 320 && report.regions.stage && report.regions.bid) {
+      const stage = report.regions.stage, dock = report.regions.bid;
+      report.landscapeSideBySide = (stage.right <= dock.left + TOLERANCE || dock.right <= stage.left + TOLERANCE) &&
+        Math.min(stage.bottom, dock.bottom) - Math.max(stage.top, dock.top) > TOLERANCE;
+      if (!report.landscapeSideBySide) issues.push('568×320 横屏的仓库与快捷报价区没有并排显示。');
+    }
+  }
   for (const control of document.querySelectorAll('.end-screen button, .end-screen a')) {
     if (!visible(control)) continue;
     const info = controlBounds(control);
@@ -159,6 +212,9 @@ export function auditWindow(window, requestedViewport) {
   const mainOverflow = [...document.querySelectorAll('.play-shell *')].filter(element => visible(element) && !element.closest('dialog') && !element.closest('.warehouse')).map(element => ({element, rect: rectOf(element.getBoundingClientRect())})).filter(({rect}) => anySide(outside(rect, viewport))).map(({element, rect}) => ({name: elementName(element), rect}));
   report.mainElementsOutsideViewport = mainOverflow;
   if (inGame && mainOverflow.length) issues.push(`主界面有 ${mainOverflow.length} 个元素超出可见视口。`);
+  const mainBounds = report.regions.main;
+  report.mainElementsOutsideMain = mainBounds ? [...document.querySelectorAll('.play-main *')].filter(element => visible(element) && !element.closest('dialog')).map(element => ({element, rect: rectOf(element.getBoundingClientRect())})).filter(({rect}) => anySide(outside(rect, mainBounds))).map(({element, rect}) => ({name: elementName(element), rect})) : [];
+  if (inGame && report.mainElementsOutsideMain.length) issues.push(`主内容区有 ${report.mainElementsOutsideMain.length} 个元素超出 .play-main。`);
   if (inGame) report.status = issues.length ? 'FAIL' : 'PASS';
   return report;
 }

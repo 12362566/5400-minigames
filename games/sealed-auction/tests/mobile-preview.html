@@ -26,11 +26,11 @@
   <p>请在内嵌游戏里入场，关闭欢迎抽屉，再检查布局。切换尺寸保留当前游戏。外层验收页可以滚动，游戏主文档不能滚动。390 × 480 仅模拟软键盘压缩后的可用高度；真实手机还需检查键盘、地址栏和安全区。</p>
   <nav id="presets" aria-label="测试视口尺寸"></nav>
   <nav><button id="audit">检查布局</button><span id="size">390 × 844 CSS px</span><span id="load-status" role="status">正在载入游戏…</span></nav>
-  <div class="viewport-stage"><iframe id="frame" src="../index.html?v=1.1.0" title="实际尺寸游戏预览：390 × 844 CSS 像素" width="390" height="844"></iframe></div>
+  <div class="viewport-stage"><iframe id="frame" src="../index.html?v=1.2.0" title="实际尺寸游戏预览：390 × 844 CSS 像素" width="390" height="844"></iframe></div>
   <output id="summary" aria-live="polite">尚未检查</output>
   <pre id="report" tabindex="0" aria-label="布局检查详细结果"></pre>
   <script type="module">
-    import {auditWindow, viewportPresets} from './layout-audit.mjs';
+    import {auditWindow, viewportPresets} from './layout-audit.mjs?v=1.2.0';
     const frame = document.querySelector('#frame');
     const report = document.querySelector('#report');
     const summary = document.querySelector('#summary');

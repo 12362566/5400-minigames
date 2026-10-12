@@ -8,11 +8,11 @@ node --check app.js
 node --check tests/layout-audit.mjs
 ```
 
-The existing 27 engine tests remain unchanged. `screen-layout.test.mjs` adds geometry-audit regression checks and the exact engine SHA-256 guard. `app-ui-flow.test.mjs` exercises the real app handlers with the real engine inside a minimal VM DOM: drawers, quick bids, validation/confirmation, tools, full five-lot play, ending/replay, storage/continue and viewport updates. These mocked DOM/geometry checks are not browser layout tests and do not prove CSS rendering or native focus behavior.
+The existing 27 engine tests remain unchanged. Version1.2 runs57 tests total:27 engine,11 app-flow and19 geometry-regression tests. `screen-layout.test.mjs` adds geometry-audit regression checks and the exact engine SHA-256 guard. `app-ui-flow.test.mjs` exercises the real app handlers with the real engine inside a minimal VM DOM: drawers, quick bids, validation/confirmation, tools, full five-lot play, ending/replay, storage/continue and viewport updates. These mocked DOM/geometry checks are not browser layout tests and do not prove CSS rendering or native focus behavior.
 
 ## Real same-origin browser fixture
 
-Open `tests/mobile-preview.html` through the same HTTP/HTTPS static server as the game. Do not use a file URL. The authored iframe loads `../index.html?v=1.1.0` and sets both CSS width and height, without a maximum width, zoom or transforms. The outer test page may scroll to reveal a large desktop frame; the inner game document must not scroll.
+Open `tests/mobile-preview.html` through the same HTTP/HTTPS static server as the game. Do not use a file URL. The authored iframe loads `../index.html?v=1.2.0` and sets both CSS width and height, without a maximum width, zoom or transforms. The outer test page may scroll to reveal a large desktop frame; the inner game document must not scroll.
 
 Presets:
 
@@ -31,7 +31,9 @@ The report includes:
 - Document/body client and scroll dimensions, root X/Y overflow and scroll position
 - Game HUD, warehouse/stage, rail and bid-dock rectangles; pairwise main-region overlap
 - Bid control and rail-button rectangles, viewport overflow, clipping ancestors and unreachable bottom edges
-- Rail targets of at least 44 × 44 CSS pixels
+- Rail and all11 fast-bid targets of at least44 ×44 CSS pixels
+- All3 presets,4 adjustment buttons,own-previous,exact-entry,pass andsubmit remain visible; amount/万 readouts and the primary action cannot be clipped
+- 568×320 bidding uses side-by-side warehouse/dock geometry
 - Visible warehouse item containment
 - Open dialog bounds and internal scroll containers, reported separately from the main document
 
@@ -60,3 +62,15 @@ Runtime commit `c1ebd364cd1bb90858836c3262203159e5a90a42` / asset version `1.1.0
 Observed interactions include all five rail panels, internal catalog scrolling (568px client height,1111px scroll height,495px internal scroll; root remained0), drawer rotation, close/Escape focus return, typed draft preservation after confirmed scan purchase, over-balance rejection, full-balance cancel, normal bid, five-round bidding, early settlement, next-lot from a settlement drawer, reload/continue, complete ledger, inspect-last/return-to-ending, replay and return home. The 320×568 and568×320 landing pages also kept all role and continue/new-game buttons in view. See `../QA.md` for values and exact observations.
 
 No runtime fixes were needed after this browser pass. Physical mobile keyboard, safe-area and address-bar behavior remain unverified; the reduced-height frame is only a layout approximation.
+
+
+## Version1.2 fast-bid acceptance
+
+Test the live1.2.0 fixture before treating the earlier1.1 browser result as applicable. In addition to the state matrix above:
+
+- A new lot starts with no selected amount and disabled submit. Tap30万,then+5万,then−1万: the draft should be340,000 /34万 without an auction action.
+- Submit is a distinct action. In a later round,“上次”restores the player's previous bid,not the public highest bid.
+- Precise editing applies only on“填入报价”;Cancel/Escape must preserve the old draft. Invalid or over-balance input stays in the editor with an error. Full-balance fill still requires final all-in confirmation at submission.
+- A confirmed tool purchase preserves the draft; if remaining cash becomes insufficient,the draft must be flagged and submit disabled until corrected.
+- Repeated+/- taps stop at0/wallet. Low-cash preset/step labels adapt without reading item values. Resize/rotate cannot submit or lose the draft.
+- Inspect320×568 and390×480 visually: the extra quick rows cannot displace the primary action or hide the warehouse. Verify exact-editor bounds at reduced height; physical OS keyboards remain a separate test.
