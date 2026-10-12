@@ -8,7 +8,7 @@ node --check app.js
 node --check tests/layout-audit.mjs
 ```
 
-The existing 27 engine tests remain unchanged. Version1.2 runs57 tests total:27 engine,11 app-flow and19 geometry-regression tests. `screen-layout.test.mjs` adds geometry-audit regression checks and the exact engine SHA-256 guard. `app-ui-flow.test.mjs` exercises the real app handlers with the real engine inside a minimal VM DOM: drawers, quick bids, validation/confirmation, tools, full five-lot play, ending/replay, storage/continue and viewport updates. These mocked DOM/geometry checks are not browser layout tests and do not prove CSS rendering or native focus behavior.
+The existing 27 engine tests remain unchanged. Version 1.2 runs 57 tests total: 27 engine, 11 app-flow and 19 geometry-regression tests. `screen-layout.test.mjs` adds geometry-audit regression checks and the exact engine SHA-256 guard. `app-ui-flow.test.mjs` exercises the real app handlers with the real engine inside a minimal VM DOM: drawers, quick bids, validation/confirmation, tools, full five-lot play, ending/replay, storage/continue and viewport updates. These mocked DOM/geometry checks are not browser layout tests and do not prove CSS rendering or native focus behavior.
 
 ## Real same-origin browser fixture
 
@@ -31,8 +31,8 @@ The report includes:
 - Document/body client and scroll dimensions, root X/Y overflow and scroll position
 - Game HUD, warehouse/stage, rail and bid-dock rectangles; pairwise main-region overlap
 - Bid control and rail-button rectangles, viewport overflow, clipping ancestors and unreachable bottom edges
-- Rail and all11 fast-bid targets of at least44 ×44 CSS pixels
-- All3 presets,4 adjustment buttons,own-previous,exact-entry,pass andsubmit remain visible; amount/万 readouts and the primary action cannot be clipped
+- Rail and all 11 fast-bid targets of at least 44 × 44 CSS pixels
+- All 3 presets, 4 adjustment buttons, own-previous, exact-entry, pass and submit remain visible; amount/万 readouts and the primary action cannot be clipped
 - 568×320 bidding uses side-by-side warehouse/dock geometry
 - Visible warehouse item containment
 - Open dialog bounds and internal scroll containers, reported separately from the main document
@@ -64,13 +64,18 @@ Observed interactions include all five rail panels, internal catalog scrolling (
 No runtime fixes were needed after this browser pass. Physical mobile keyboard, safe-area and address-bar behavior remain unverified; the reduced-height frame is only a layout approximation.
 
 
-## Version1.2 fast-bid acceptance
+## Version 1.2 fast-bid acceptance
 
-Test the live1.2.0 fixture before treating the earlier1.1 browser result as applicable. In addition to the state matrix above:
+Test the live 1.2.0 fixture before treating the earlier 1.1 browser result as applicable. In addition to the state matrix above:
 
-- A new lot starts with no selected amount and disabled submit. Tap30万,then+5万,then−1万: the draft should be340,000 /34万 without an auction action.
-- Submit is a distinct action. In a later round,“上次”restores the player's previous bid,not the public highest bid.
-- Precise editing applies only on“填入报价”;Cancel/Escape must preserve the old draft. Invalid or over-balance input stays in the editor with an error. Full-balance fill still requires final all-in confirmation at submission.
-- A confirmed tool purchase preserves the draft; if remaining cash becomes insufficient,the draft must be flagged and submit disabled until corrected.
-- Repeated+/- taps stop at0/wallet. Low-cash preset/step labels adapt without reading item values. Resize/rotate cannot submit or lose the draft.
-- Inspect320×568 and390×480 visually: the extra quick rows cannot displace the primary action or hide the warehouse. Verify exact-editor bounds at reduced height; physical OS keyboards remain a separate test.
+- A new lot starts with no selected amount and disabled submit. Tap 30万, then +5万, then −1万: the draft should be340,000 / 34万 without an auction action.
+- Submit is a distinct action. In a later round, “上次” restores the player's previous bid, not the public highest bid.
+- Precise editing applies only on “填入报价”; Cancel/Escape must preserve the old draft. Invalid or over-balance input stays in the editor with an error. Full-balance fill still requires final all-in confirmation at submission.
+- A confirmed tool purchase preserves the draft; if remaining cash becomes insufficient, the draft must be flagged and submit disabled until corrected.
+- Repeated+/- taps stop at 0/wallet. Low-cash preset/step labels adapt without reading item values. Resize/rotate cannot submit or lose the draft.
+- Inspect 320×568 and 390×480 visually: the extra quick rows cannot displace the primary action or hide the warehouse. Verify exact-editor bounds at reduced height; physical OS keyboards remain a separate test.
+
+
+### Recorded 1.2 browser outcome
+
+The public runtime at `24d6a96572e94469c2ac7d4e03e69c32577b2f91` passed all six exact iframe sizes on 2026-10-12. Each showed all 11 bid controls at least 44×44 CSS pixels, no scrolling/clipping/overlap, both amount readouts, and the primary action. Landscape was genuinely side by side. Exact-entry, cancellation/invalid input, full-balance confirmation, tool-cost budget revalidation, own-previous bid, reload/continue, complete five-lot play, ending/replay and zero-clamping were exercised through visible UI. The precise editor also passed at 390×480. No runtime patch was needed. Detailed values and limitations are in `../QA.md`.
