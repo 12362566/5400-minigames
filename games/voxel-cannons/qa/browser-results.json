@@ -1,0 +1,74 @@
+{
+  "version": "1.0.1",
+  "date": "2026-10-13",
+  "runtime_commit": "3d178ff5ade93765e323cce5c517a547d50809ec",
+  "fixture_commit": "41b115bdd118861a7fe3ccb2ed3d79d07a3c3e30",
+  "method": "Published same-origin iframe in Chrome; actual internal viewport sizes",
+  "results": [
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "passed": 50,
+      "total": 50,
+      "failures": []
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "passed": 50,
+      "total": 50,
+      "failures": []
+    },
+    {
+      "viewport": [
+        410,
+        820
+      ],
+      "passed": 50,
+      "total": 50,
+      "failures": []
+    },
+    {
+      "viewport": [
+        844,
+        390
+      ],
+      "passed": 50,
+      "total": 50,
+      "failures": []
+    },
+    {
+      "viewport": [
+        568,
+        320
+      ],
+      "passed": 50,
+      "total": 50,
+      "failures": []
+    },
+    {
+      "viewport": [
+        1280,
+        900
+      ],
+      "passed": 50,
+      "total": 50,
+      "failures": []
+    }
+  ],
+  "node_tests": {
+    "passed": 22,
+    "total": 22
+  },
+  "manual": [
+    "Mouse and numeric cannon selection",
+    "5 percent save reload, 453 blocks and 20-ammo green cannon preserved",
+    "Live first level cleared with 476 shots",
+    "Next advances to level 2",
+    "Final cannon-aligned projectile visual review"
+  ]
+}
