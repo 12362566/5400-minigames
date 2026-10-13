@@ -42,7 +42,11 @@ export class VoxelRenderer {
   }
   point(x,y,z){return [this.originX+(x-z*.38)*this.scale,this.originY+(-x*.15-z*.70-y*.90)*this.scale];}
   frontPoint(v){return this.point(v.x+.5,v.y+.5,v.z);}
-  sourcePoint(slot){return [this.width*(.16+slot*.17),this.height+5];}
+  sourcePoint(slot){
+    const cannon=document.querySelector(`#active-slots .slot:nth-child(${slot+1}) .cannon`);
+    if(cannon){const r=cannon.getBoundingClientRect(),c=this.canvas.getBoundingClientRect();return [r.left+r.width*.52-c.left,r.top+r.height*.12-c.top];}
+    return [this.width*(.16+slot*.17),this.height+5];
+  }
   events(events){
     for(const e of events){if(e.type==='shot'){
       const end=this.frontPoint(e.target),start=this.sourcePoint(e.slotIndex),duration=.15+Math.abs(end[1]-start[1])/1500;
