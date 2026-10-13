@@ -1,0 +1,816 @@
+{
+  "status": "GPU validation blocked: cloud browser disables WebGL; layout-only checks pass",
+  "candidate": "436a34036384292f8ba8aa89857f0e638f51b4a9",
+  "viewports": [
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "renderer": {
+        "engine": "unavailable",
+        "webgl": 0,
+        "dpr": 0,
+        "visibleVoxels": 0,
+        "meshes": 0,
+        "fps": 0,
+        "available": false,
+        "blocked": true,
+        "error": "Error: WebGL is unavailable",
+        "ready": false,
+        "projectiles": 0
+      },
+      "passed": 16,
+      "total": 19,
+      "failures": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        }
+      ],
+      "checks": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "device pixel ratio capped at 1.5",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        },
+        {
+          "name": "body no horizontal overflow",
+          "passed": true,
+          "details": "390 <= 390"
+        },
+        {
+          "name": "body no vertical overflow",
+          "passed": true,
+          "details": "844 <= 844"
+        },
+        {
+          "name": "game-canvas stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":60,\"width\":370,\"height\":672,\"right\":380,\"bottom\":732}"
+        },
+        {
+          "name": "menu-button stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":336,\"y\":8,\"width\":44,\"height\":44,\"right\":380,\"bottom\":52}"
+        },
+        {
+          "name": "queue-buttons stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":766,\"width\":370,\"height\":50,\"right\":380,\"bottom\":816}"
+        },
+        {
+          "name": "active-slots stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":740,\"width\":370,\"height\":20,\"right\":380,\"bottom\":760}"
+        },
+        {
+          "name": "hint stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":823.15625,\"width\":144.015625,\"height\":11.6875,\"right\":154.015625,\"bottom\":834.84375}"
+        },
+        {
+          "name": "controls stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":740,\"width\":370,\"height\":96,\"right\":380,\"bottom\":836}"
+        },
+        {
+          "name": "menu-button 44px target",
+          "passed": true,
+          "details": "44×44"
+        },
+        {
+          "name": "青柠炮手，54发，待命8个。按1上阵 44px target",
+          "passed": true,
+          "details": "88×50"
+        },
+        {
+          "name": "莓果炮手，50发，待命7个。按2上阵 44px target",
+          "passed": true,
+          "details": "88×50"
+        },
+        {
+          "name": "晴空炮手，55发，待命6个。按3上阵 44px target",
+          "passed": true,
+          "details": "88×50"
+        },
+        {
+          "name": "墨蓝炮手，55发，待命18个。按4上阵 44px target",
+          "passed": true,
+          "details": "88×50"
+        },
+        {
+          "name": "sculpture canvas has usable space",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":60,\"width\":370,\"height\":672,\"right\":380,\"bottom\":732}"
+        },
+        {
+          "name": "stage and controls do not overlap",
+          "passed": true,
+          "details": "{\"stage\":{\"x\":10,\"y\":60,\"width\":370,\"height\":672,\"top\":60,\"right\":380,\"bottom\":732,\"left\":10},\"controls\":{\"x\":10,\"y\":740,\"width\":370,\"height\":96,\"top\":740,\"right\":380,\"bottom\":836,\"left\":10}}"
+        }
+      ]
+    },
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "renderer": {
+        "engine": "unavailable",
+        "webgl": 0,
+        "dpr": 0,
+        "visibleVoxels": 0,
+        "meshes": 0,
+        "fps": 0,
+        "available": false,
+        "blocked": true,
+        "error": "Error: WebGL is unavailable",
+        "ready": false,
+        "projectiles": 0
+      },
+      "passed": 16,
+      "total": 19,
+      "failures": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        }
+      ],
+      "checks": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "device pixel ratio capped at 1.5",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        },
+        {
+          "name": "body no horizontal overflow",
+          "passed": true,
+          "details": "320 <= 320"
+        },
+        {
+          "name": "body no vertical overflow",
+          "passed": true,
+          "details": "568 <= 568"
+        },
+        {
+          "name": "game-canvas stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":60,\"width\":300,\"height\":396,\"right\":310,\"bottom\":456}"
+        },
+        {
+          "name": "menu-button stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":266,\"y\":8,\"width\":44,\"height\":44,\"right\":310,\"bottom\":52}"
+        },
+        {
+          "name": "queue-buttons stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":490,\"width\":300,\"height\":50,\"right\":310,\"bottom\":540}"
+        },
+        {
+          "name": "active-slots stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":464,\"width\":300,\"height\":20,\"right\":310,\"bottom\":484}"
+        },
+        {
+          "name": "hint stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":547.796875,\"width\":128,\"height\":10.390625,\"right\":138,\"bottom\":558.1875}"
+        },
+        {
+          "name": "controls stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":464,\"width\":300,\"height\":96,\"right\":310,\"bottom\":560}"
+        },
+        {
+          "name": "menu-button 44px target",
+          "passed": true,
+          "details": "44×44"
+        },
+        {
+          "name": "青柠炮手，54发，待命8个。按1上阵 44px target",
+          "passed": true,
+          "details": "70.5×50"
+        },
+        {
+          "name": "莓果炮手，50发，待命7个。按2上阵 44px target",
+          "passed": true,
+          "details": "70.5×50"
+        },
+        {
+          "name": "晴空炮手，55发，待命6个。按3上阵 44px target",
+          "passed": true,
+          "details": "70.5×50"
+        },
+        {
+          "name": "墨蓝炮手，55发，待命18个。按4上阵 44px target",
+          "passed": true,
+          "details": "70.5×50"
+        },
+        {
+          "name": "sculpture canvas has usable space",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":60,\"width\":300,\"height\":396,\"right\":310,\"bottom\":456}"
+        },
+        {
+          "name": "stage and controls do not overlap",
+          "passed": true,
+          "details": "{\"stage\":{\"x\":10,\"y\":60,\"width\":300,\"height\":396,\"top\":60,\"right\":310,\"bottom\":456,\"left\":10},\"controls\":{\"x\":10,\"y\":464,\"width\":300,\"height\":96,\"top\":464,\"right\":310,\"bottom\":560,\"left\":10}}"
+        }
+      ]
+    },
+    {
+      "viewport": [
+        410,
+        820
+      ],
+      "renderer": {
+        "engine": "unavailable",
+        "webgl": 0,
+        "dpr": 0,
+        "visibleVoxels": 0,
+        "meshes": 0,
+        "fps": 0,
+        "available": false,
+        "blocked": true,
+        "error": "Error: WebGL is unavailable",
+        "ready": false,
+        "projectiles": 0
+      },
+      "passed": 16,
+      "total": 19,
+      "failures": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        }
+      ],
+      "checks": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "device pixel ratio capped at 1.5",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        },
+        {
+          "name": "body no horizontal overflow",
+          "passed": true,
+          "details": "410 <= 410"
+        },
+        {
+          "name": "body no vertical overflow",
+          "passed": true,
+          "details": "820 <= 820"
+        },
+        {
+          "name": "game-canvas stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":60,\"width\":390,\"height\":648,\"right\":400,\"bottom\":708}"
+        },
+        {
+          "name": "menu-button stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":356,\"y\":8,\"width\":44,\"height\":44,\"right\":400,\"bottom\":52}"
+        },
+        {
+          "name": "queue-buttons stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":742,\"width\":390,\"height\":50,\"right\":400,\"bottom\":792}"
+        },
+        {
+          "name": "active-slots stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":716,\"width\":390,\"height\":20,\"right\":400,\"bottom\":736}"
+        },
+        {
+          "name": "hint stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":799.15625,\"width\":144.015625,\"height\":11.6875,\"right\":154.015625,\"bottom\":810.84375}"
+        },
+        {
+          "name": "controls stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":716,\"width\":390,\"height\":96,\"right\":400,\"bottom\":812}"
+        },
+        {
+          "name": "menu-button 44px target",
+          "passed": true,
+          "details": "44×44"
+        },
+        {
+          "name": "青柠炮手，54发，待命8个。按1上阵 44px target",
+          "passed": true,
+          "details": "93×50"
+        },
+        {
+          "name": "莓果炮手，50发，待命7个。按2上阵 44px target",
+          "passed": true,
+          "details": "93×50"
+        },
+        {
+          "name": "晴空炮手，55发，待命6个。按3上阵 44px target",
+          "passed": true,
+          "details": "93×50"
+        },
+        {
+          "name": "墨蓝炮手，55发，待命18个。按4上阵 44px target",
+          "passed": true,
+          "details": "93×50"
+        },
+        {
+          "name": "sculpture canvas has usable space",
+          "passed": true,
+          "details": "{\"x\":10,\"y\":60,\"width\":390,\"height\":648,\"right\":400,\"bottom\":708}"
+        },
+        {
+          "name": "stage and controls do not overlap",
+          "passed": true,
+          "details": "{\"stage\":{\"x\":10,\"y\":60,\"width\":390,\"height\":648,\"top\":60,\"right\":400,\"bottom\":708,\"left\":10},\"controls\":{\"x\":10,\"y\":716,\"width\":390,\"height\":96,\"top\":716,\"right\":400,\"bottom\":812,\"left\":10}}"
+        }
+      ]
+    },
+    {
+      "viewport": [
+        844,
+        390
+      ],
+      "renderer": {
+        "engine": "unavailable",
+        "webgl": 0,
+        "dpr": 0,
+        "visibleVoxels": 0,
+        "meshes": 0,
+        "fps": 0,
+        "available": false,
+        "blocked": true,
+        "error": "Error: WebGL is unavailable",
+        "ready": false,
+        "projectiles": 0
+      },
+      "passed": 16,
+      "total": 19,
+      "failures": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        }
+      ],
+      "checks": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "device pixel ratio capped at 1.5",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        },
+        {
+          "name": "body no horizontal overflow",
+          "passed": true,
+          "details": "844 <= 844"
+        },
+        {
+          "name": "body no vertical overflow",
+          "passed": true,
+          "details": "390 <= 390"
+        },
+        {
+          "name": "game-canvas stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":12,\"y\":60,\"width\":618,\"height\":322,\"right\":630,\"bottom\":382}"
+        },
+        {
+          "name": "menu-button stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":788,\"y\":8,\"width\":44,\"height\":44,\"right\":832,\"bottom\":52}"
+        },
+        {
+          "name": "queue-buttons stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":640,\"y\":161.453125,\"width\":192,\"height\":115,\"right\":832,\"bottom\":276.453125}"
+        },
+        {
+          "name": "active-slots stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":640,\"y\":131.453125,\"width\":192,\"height\":22,\"right\":832,\"bottom\":153.453125}"
+        },
+        {
+          "name": "hint stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":663.984375,\"y\":284.453125,\"width\":144.015625,\"height\":11.6875,\"right\":808,\"bottom\":296.140625}"
+        },
+        {
+          "name": "controls stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":640,\"y\":131.453125,\"width\":192,\"height\":179.078125,\"right\":832,\"bottom\":310.53125}"
+        },
+        {
+          "name": "menu-button 44px target",
+          "passed": true,
+          "details": "44×44"
+        },
+        {
+          "name": "青柠炮手，54发，待命8个。按1上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "莓果炮手，50发，待命7个。按2上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "晴空炮手，55发，待命6个。按3上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "墨蓝炮手，55发，待命18个。按4上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "sculpture canvas has usable space",
+          "passed": true,
+          "details": "{\"x\":12,\"y\":60,\"width\":618,\"height\":322,\"right\":630,\"bottom\":382}"
+        },
+        {
+          "name": "stage and controls do not overlap",
+          "passed": true,
+          "details": "{\"stage\":{\"x\":12,\"y\":60,\"width\":618,\"height\":322,\"top\":60,\"right\":630,\"bottom\":382,\"left\":12},\"controls\":{\"x\":640,\"y\":131.453125,\"width\":192,\"height\":179.078125,\"top\":131.453125,\"right\":832,\"bottom\":310.53125,\"left\":640}}"
+        }
+      ]
+    },
+    {
+      "viewport": [
+        568,
+        320
+      ],
+      "renderer": {
+        "engine": "unavailable",
+        "webgl": 0,
+        "dpr": 0,
+        "visibleVoxels": 0,
+        "meshes": 0,
+        "fps": 0,
+        "available": false,
+        "blocked": true,
+        "error": "Error: WebGL is unavailable",
+        "ready": false,
+        "projectiles": 0
+      },
+      "passed": 16,
+      "total": 19,
+      "failures": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        }
+      ],
+      "checks": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "device pixel ratio capped at 1.5",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        },
+        {
+          "name": "body no horizontal overflow",
+          "passed": true,
+          "details": "568 <= 568"
+        },
+        {
+          "name": "body no vertical overflow",
+          "passed": true,
+          "details": "320 <= 320"
+        },
+        {
+          "name": "game-canvas stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":12,\"y\":60,\"width\":342,\"height\":252,\"right\":354,\"bottom\":312}"
+        },
+        {
+          "name": "menu-button stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":512,\"y\":8,\"width\":44,\"height\":44,\"right\":556,\"bottom\":52}"
+        },
+        {
+          "name": "queue-buttons stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":364,\"y\":126.453125,\"width\":192,\"height\":115,\"right\":556,\"bottom\":241.453125}"
+        },
+        {
+          "name": "active-slots stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":364,\"y\":96.453125,\"width\":192,\"height\":22,\"right\":556,\"bottom\":118.453125}"
+        },
+        {
+          "name": "hint stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":387.984375,\"y\":249.453125,\"width\":144.015625,\"height\":11.6875,\"right\":532,\"bottom\":261.140625}"
+        },
+        {
+          "name": "controls stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":364,\"y\":96.453125,\"width\":192,\"height\":179.078125,\"right\":556,\"bottom\":275.53125}"
+        },
+        {
+          "name": "menu-button 44px target",
+          "passed": true,
+          "details": "44×44"
+        },
+        {
+          "name": "青柠炮手，54发，待命8个。按1上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "莓果炮手，50发，待命7个。按2上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "晴空炮手，55发，待命6个。按3上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "墨蓝炮手，55发，待命18个。按4上阵 44px target",
+          "passed": true,
+          "details": "92.5×54"
+        },
+        {
+          "name": "sculpture canvas has usable space",
+          "passed": true,
+          "details": "{\"x\":12,\"y\":60,\"width\":342,\"height\":252,\"right\":354,\"bottom\":312}"
+        },
+        {
+          "name": "stage and controls do not overlap",
+          "passed": true,
+          "details": "{\"stage\":{\"x\":12,\"y\":60,\"width\":342,\"height\":252,\"top\":60,\"right\":354,\"bottom\":312,\"left\":12},\"controls\":{\"x\":364,\"y\":96.453125,\"width\":192,\"height\":179.078125,\"top\":96.453125,\"right\":556,\"bottom\":275.53125,\"left\":364}}"
+        }
+      ]
+    },
+    {
+      "viewport": [
+        1280,
+        900
+      ],
+      "renderer": {
+        "engine": "unavailable",
+        "webgl": 0,
+        "dpr": 0,
+        "visibleVoxels": 0,
+        "meshes": 0,
+        "fps": 0,
+        "available": false,
+        "blocked": true,
+        "error": "Error: WebGL is unavailable",
+        "ready": false,
+        "projectiles": 0
+      },
+      "passed": 16,
+      "total": 19,
+      "failures": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        }
+      ],
+      "checks": [
+        {
+          "name": "actual Babylon WebGL renderer initialized",
+          "passed": false,
+          "details": "{\"engine\":\"unavailable\",\"webgl\":0,\"dpr\":0,\"visibleVoxels\":0,\"meshes\":0,\"fps\":0,\"available\":false,\"blocked\":true,\"error\":\"Error: WebGL is unavailable\",\"ready\":false,\"projectiles\":0}"
+        },
+        {
+          "name": "shader compilation finished",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "device pixel ratio capped at 1.5",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "world voxel instances match simulation",
+          "passed": false,
+          "details": "{\"instances\":0,\"remaining\":2072}"
+        },
+        {
+          "name": "body no horizontal overflow",
+          "passed": true,
+          "details": "1280 <= 1280"
+        },
+        {
+          "name": "body no vertical overflow",
+          "passed": true,
+          "details": "900 <= 900"
+        },
+        {
+          "name": "game-canvas stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":98,\"y\":68,\"width\":1084,\"height\":709,\"right\":1182,\"bottom\":777}"
+        },
+        {
+          "name": "menu-button stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":1138,\"y\":14,\"width\":44,\"height\":44,\"right\":1182,\"bottom\":58}"
+        },
+        {
+          "name": "queue-buttons stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":340,\"y\":813,\"width\":600,\"height\":54,\"right\":940,\"bottom\":867}"
+        },
+        {
+          "name": "active-slots stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":340,\"y\":785,\"width\":600,\"height\":22,\"right\":940,\"bottom\":807}"
+        },
+        {
+          "name": "hint stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":340,\"y\":874,\"width\":160,\"height\":13,\"right\":500,\"bottom\":887}"
+        },
+        {
+          "name": "controls stays inside viewport",
+          "passed": true,
+          "details": "{\"x\":340,\"y\":785,\"width\":600,\"height\":103,\"right\":940,\"bottom\":888}"
+        },
+        {
+          "name": "menu-button 44px target",
+          "passed": true,
+          "details": "44×44"
+        },
+        {
+          "name": "青柠炮手，54发，待命8个。按1上阵 44px target",
+          "passed": true,
+          "details": "144×54"
+        },
+        {
+          "name": "莓果炮手，50发，待命7个。按2上阵 44px target",
+          "passed": true,
+          "details": "144×54"
+        },
+        {
+          "name": "晴空炮手，55发，待命6个。按3上阵 44px target",
+          "passed": true,
+          "details": "144×54"
+        },
+        {
+          "name": "墨蓝炮手，55发，待命18个。按4上阵 44px target",
+          "passed": true,
+          "details": "144×54"
+        },
+        {
+          "name": "sculpture canvas has usable space",
+          "passed": true,
+          "details": "{\"x\":98,\"y\":68,\"width\":1084,\"height\":709,\"right\":1182,\"bottom\":777}"
+        },
+        {
+          "name": "stage and controls do not overlap",
+          "passed": true,
+          "details": "{\"stage\":{\"x\":98,\"y\":68,\"width\":1084,\"height\":709,\"top\":68,\"right\":1182,\"bottom\":777,\"left\":98},\"controls\":{\"x\":340,\"y\":785,\"width\":600,\"height\":103,\"top\":785,\"right\":940,\"bottom\":888,\"left\":340}}"
+        }
+      ]
+    }
+  ]
+}

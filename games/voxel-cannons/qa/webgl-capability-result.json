@@ -1,0 +1,24 @@
+{
+  "webglConstructor": "function",
+  "webgl2Constructor": "function",
+  "checks": [
+    {
+      "kind": "webgl2",
+      "supported": false,
+      "error": "Could not create a WebGL context, VENDOR = 0xffff, DEVICE = 0xffff, GL_VENDOR = Disabled, GL_RENDERER = Disabled, Sandboxed = yes, Optimus = no, AMD switchable = no, Reset notification strategy = 0x0000, ErrorMessage = BindToCurrentSequence failed: .",
+      "version": null
+    },
+    {
+      "kind": "webgl",
+      "supported": false,
+      "error": "Could not create a WebGL context, VENDOR = 0xffff, DEVICE = 0xffff, GL_VENDOR = Disabled, GL_RENDERER = Disabled, Sandboxed = yes, Optimus = no, AMD switchable = no, Reset notification strategy = 0x0000, ErrorMessage = BindToCurrentSequence failed: .",
+      "version": null
+    },
+    {
+      "kind": "experimental-webgl",
+      "supported": false,
+      "error": "Could not create a WebGL context, VENDOR = 0xffff, DEVICE = 0xffff, GL_VENDOR = Disabled, GL_RENDERER = Disabled, Sandboxed = yes, Optimus = no, AMD switchable = no, Reset notification strategy = 0x0000, ErrorMessage = BindToCurrentSequence failed: .",
+      "version": null
+    }
+  ]
+}
