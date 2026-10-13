@@ -514,8 +514,9 @@ class VoxelRenderer {
     this.scale=Math.min((this.width-30)/rawW,(this.height-top-bottom)/rawH);
     this.scale=Math.max(1,this.scale);
     this.originX=(this.width-rawW*this.scale)/2+d*.38*this.scale;
-    this.originY=top+rawH*this.scale;
-    this.modelBounds={left:(this.width-rawW*this.scale)/2,top,width:rawW*this.scale,height:rawH*this.scale};
+    const freeHeight=Math.max(0,this.height-top-bottom-rawH*this.scale);
+    this.originY=top+freeHeight*.48+rawH*this.scale;
+    this.modelBounds={left:(this.width-rawW*this.scale)/2,top:top+freeHeight*.48,width:rawW*this.scale,height:rawH*this.scale};
   }
   point(x,y,z){return [this.originX+(x-z*.38)*this.scale,this.originY+(-x*.15-z*.70-y*.90)*this.scale];}
   frontPoint(v){return this.point(v.x+.5,v.y+.5,v.z);}
