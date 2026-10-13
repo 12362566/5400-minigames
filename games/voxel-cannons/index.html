@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5efdf" />
+    <meta name="description" content="方块炮手：挑选彩色炮台，击碎立体方块，享受一场轻松的小小策略挑战。" />
+    <title>方块炮手 · CUBE SALVO</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="game-shell">
+      <header class="game-header">
+        <div class="brand" aria-label="方块炮手">
+          <span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div class="brand-wordmark"><span class="brand-subtitle">CUBE SALVO</span><h1>方块炮手<span class="title-dot">.</span></h1></div>
+        </div>
+        <div class="run-stats" aria-label="关卡进度">
+          <div class="stats-top"><span class="level-chip" id="level-label">第 01 关</span><span class="progress-label" id="progress-label">0 / 0</span></div>
+          <div class="progress-track" role="progressbar" aria-label="方块清除进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-fill"></div></div>
+        </div>
+        <button id="menu-button" class="icon-button menu-button" type="button" aria-label="打开菜单" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" /></svg></button>
+      </header>
+
+      <main class="play-area">
+        <section id="stage" class="stage" aria-label="立体方块靶场">
+          <div class="stage-caption" aria-hidden="true"><span class="live-dot"></span><span>小小炮台，大大解压</span></div>
+          <div class="stage-stamp" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m16 3 12 7v13l-12 7-12-7V10Zm0 0v14m12-7-12 7-12-7m12 7v13" /></svg><span>3D<br>PLAY</span></div>
+          <canvas id="game-canvas" role="img" aria-label="立体方块雕塑。选择下方与外层方块同色的炮台，炮台会自动发射。"></canvas>
+          <div class="stage-floor-label" aria-hidden="true">PICK YOUR COLOR. MAKE IT POP.</div>
+        </section>
+
+        <section id="controls" class="controls" aria-label="选择炮台">
+          <div class="active-header"><span>发射阵地</span><span class="active-caption">5 个位置 · 自动发射</span></div>
+          <div id="active-slots" class="active-slots" aria-label="五个发射位置"></div>
+          <div class="queue-header"><span class="queue-rule"></span><span>点击炮台，准备发射</span><span class="queue-rule"></span></div>
+          <div id="queue-buttons" class="queue-buttons" aria-label="四列待发射炮台"></div>
+          <div class="controls-footer"><p id="hint">挑选与外层方块同色的炮台</p><span id="status-label" aria-live="polite">准备就绪</span></div>
+        </section>
+      </main>
+      <footer class="game-footer" aria-hidden="true"><span>A LITTLE COLOR. A LITTLE STRATEGY.</span><span>轻点一下 · 快乐消除</span></footer>
+    </div>
+
+    <dialog id="menu-dialog" class="dialog drawer" aria-labelledby="menu-title">
+      <div class="drawer-inner">
+        <header class="dialog-header"><div><span class="eyebrow">TAKE A LITTLE BREAK</span><h2 id="menu-title">歇一下，再开炮。</h2></div><button id="close-menu" class="icon-button close-button" type="button" aria-label="关闭菜单">×</button></header>
+        <div class="menu-actions">
+          <button id="resume-button" class="button button-primary" type="button">继续游戏 <span aria-hidden="true">↗</span></button>
+          <button id="restart-button" class="button button-secondary" type="button">重新开始 <span aria-hidden="true">↻</span></button>
+          <button id="levels-button" class="button button-secondary" type="button">选择关卡 <span aria-hidden="true">▦</span></button>
+        </div>
+        <div class="settings-row"><button id="sound-button" class="setting-button" type="button" aria-pressed="true">音效 <span>开启</span></button><button id="motion-button" class="setting-button" type="button" aria-pressed="true">动态效果 <span>开启</span></button></div>
+        <section class="how-to" aria-labelledby="how-to-title"><span class="eyebrow">HOW TO PLAY</span><h3 id="how-to-title">三个步骤，快乐开炮</h3><ol><li><span>01</span><p>观察雕塑外层，找到露出的颜色。</p></li><li><span>02</span><p>点击下方炮台，送入空闲发射位。<small>也可使用键盘数字 1–4 选择。</small></p></li><li><span>03</span><p>炮台自动消除同色方块。清空雕塑，即可过关！<small>留意颜色，别让五个位置全被占满。</small></p></li></ol></section>
+        <p class="source-note">玩法参考 <a href="https://www.bilibili.com/video/BV1dKaq61EXB/" target="_blank" rel="noopener noreferrer">Bilibili 原视频 ↗</a><br><span>独立制作的浏览器小游戏</span></p>
+      </div>
+    </dialog>
+
+    <dialog id="level-dialog" class="dialog level-dialog" aria-labelledby="levels-title"><header class="dialog-header"><div><span class="eyebrow">PICK A CHALLENGE</span><h2 id="levels-title">今天，拆哪一个？</h2></div><button id="close-levels" class="icon-button close-button" type="button" aria-label="关闭关卡选择">×</button></header><p class="dialog-description">每一座小雕塑，都藏着新的颜色组合。</p><div id="level-grid" class="level-grid"></div></dialog>
+
+    <dialog id="result-dialog" class="dialog result-dialog" aria-labelledby="result-title"><div class="result-art" aria-hidden="true"><i></i><i></i><i></i><i></i><span>✦</span></div><span class="eyebrow" id="result-eyebrow">NICE SHOT!</span><h2 id="result-title">漂亮，全部拿下！</h2><p id="result-copy" class="dialog-description">这一关的每一种颜色，都被你安排得明明白白。</p><div class="result-actions"><button id="next-button" class="button button-primary" type="button">下一关 <span aria-hidden="true">↗</span></button><button id="retry-button" class="button button-secondary" type="button">再玩一次</button></div></dialog>
+
+    <dialog id="confirm-dialog" class="dialog confirm-dialog" aria-labelledby="confirm-title"><span class="eyebrow">FRESH START?</span><h2 id="confirm-title">重新来一局？</h2><p id="confirm-copy" class="dialog-description">本关进度将重新开始，已解锁的关卡会保留。</p><div class="confirm-actions"><button id="confirm-cancel" class="button button-secondary" type="button">继续玩</button><button id="confirm-ok" class="button button-primary" type="button">重新开始</button></div></dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script defer src="./game.js"></script>
+  </body>
+</html>
