@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   createGame, deploy, tick, exposedTargets, summarize, serialize, restore,
-  validateState, COLORS, LEVELS, SLOT_COUNT, FIRE_INTERVAL, nextLevelIndex,
+  validateState, COLORS, LEVELS, SLOT_COUNT, FIRE_INTERVAL, nextLevelIndex, getStateLevel, SAVE_VERSION,
 } from '../src/engine.js';
 
 function assertConservation(state) {
@@ -28,12 +29,22 @@ function supplyVisibleColors(state) {
   }
 }
 
-test('all twelve original levels are finite, deterministic, distinct, and balanced', () => {
+test('all twelve original tall levels are finite, deterministic, distinct, and balanced', () => {
   assert.equal(LEVELS.length, 12);
   assert.equal(new Set(LEVELS.map(level => level.name)).size, 12);
-  assert.equal(LEVELS[0].total, 476);
+  assert.equal(LEVELS[0].total, 2072);
   for (const level of LEVELS) {
     assert.equal(level.total, level.voxels.length);
+    assert.ok([18, 20, 22].includes(level.width));
+    if (level.index === 0) {
+      assert.deepEqual(level.dimensions, { width: 18, height: 8, depth: 16 });
+    } else {
+      assert.ok(level.height >= 14 && level.height <= 16);
+      assert.ok(level.depth >= 8 && level.depth <= 12);
+    }
+    assert.equal(Math.max(...level.voxels.map(v => v.y)) + 1, level.height);
+    assert.equal(createGame(level.index).campaignVersion, 2);
+    assert.deepEqual(createGame(level.index).dimensions, level.dimensions);
     assert.equal(level.queues.length, 4);
     assert.equal(new Set(level.voxels.map(v => `${v.x},${v.y},${v.z}`)).size, level.total);
     for (const color of COLORS) {
@@ -162,7 +173,7 @@ test('all 12 levels are winnable by choosing currently visible colors', () => {
 
 test('five blocked slots produce one recoverable loss with ammunition intact', () => {
   const state = createGame(6);
-  assert.equal(state.queues[0].length, 5);
+  assert.ok(state.queues[0].length >= 5);
   for (let slot = 0; slot < SLOT_COUNT; slot++) assert.equal(deploy(state, 0).ok, true);
   assert.equal(deploy(state, 1).reason, 'slots-full');
   const events = tick(state, 100);
@@ -212,6 +223,10 @@ test('corrupted or inconsistent saves are rejected instead of partially restored
   const base = JSON.parse(serialize(createGame()));
   const changes = [
     data => { data.version = 999; },
+    data => { data.campaignVersion = 99; },
+    data => { delete data.campaignVersion; },
+    data => { data.campaignVersion = 1; },
+    data => { data.version = 1; },
     data => { data.levelIndex = 12; },
     data => { data.timeUs = -1; },
     data => { data.timeUs = 0.5; },
@@ -274,4 +289,78 @@ test('strict validation rejects blocked-ray removal and altered runtime identiti
   const changedCannon = restore(serialize(state));
   changedCannon.slots[0].color = 'cyan';
   assert.throws(() => validateState(changedCannon), /modified cannon identity/);
+});
+
+
+test('pre-redesign schema-1 fixture restores the exact original 476-cube layout', () => {
+  // Captured with the old engine BEFORE tall campaign definitions were added.
+  // Its static IDs/mask ensure this cannot silently become a new-campaign test.
+  const fixture = readFileSync(new URL('./fixtures/legacy-v1-midround.json', import.meta.url), 'utf8').trim();
+  const state = restore(fixture);
+  assert.equal(state.version, SAVE_VERSION);
+  assert.equal(state.campaignVersion, 1);
+  assert.equal(state.levelId, 'sculpture-1');
+  assert.deepEqual(state.dimensions, { width: 12, height: 5, depth: 12 });
+  assert.equal(state.total, 476);
+  assert.equal(state.hits, 8);
+  assert.equal(state.timeUs, 321000);
+  assert.deepEqual(state.voxels[0], { id: 0, x: 2, y: 0, z: 0, color: 'green', alive: false });
+  assert.deepEqual(state.voxels.at(-1), { id: 475, x: 9, y: 2, z: 11, color: 'cyan', alive: true });
+  assert.equal(state.slots[0].id, 'l0-green-0');
+  assert.equal(state.slots[0].ammo, 39);
+  assert.equal(state.slots[0].cooldownUs, 59000);
+  assert.equal(getStateLevel(state).total, 476);
+  assertConservation(state);
+  validateState(state);
+
+  const newSave = JSON.parse(serialize(state));
+  assert.equal(newSave.version, 2);
+  assert.equal(newSave.campaignVersion, 1);
+  const resumed = restore(JSON.stringify(newSave));
+  const baseline = createGame(0, 1);
+  deploy(baseline, 0); deploy(baseline, 1); tick(baseline, 0.321);
+  for (const dt of [0.016, 0.059, 0.105, 0.5]) {
+    assert.deepEqual(tick(resumed, dt), tick(baseline, dt));
+    assert.equal(serialize(resumed), serialize(baseline));
+  }
+});
+
+test('new campaign fixture restores broad-roof opening geometry and version-specific cannon IDs', () => {
+  // Regenerate with createGame(0), deploy green then pink, and tick 0.321 s.
+  // The opening layout follows the reference’s green-scene roof proportions.
+  const fixture = readFileSync(new URL('./fixtures/tall-v2-midround.json', import.meta.url), 'utf8').trim();
+  const state = restore(fixture);
+  assert.equal(state.version, 2);
+  assert.equal(state.campaignVersion, 2);
+  assert.equal(state.levelId, 'sculpture-v2-1');
+  assert.deepEqual(state.dimensions, { width: 18, height: 8, depth: 16 });
+  assert.equal(state.total, 2072);
+  assert.equal(state.hits, 8);
+  assert.equal(state.timeUs, 321000);
+  assert.equal(state.slots[0].id, 'v2-l0-green-0');
+  assert.equal(serialize(state), fixture);
+  assertConservation(state);
+  validateState(state);
+  const baseline = createGame(0);
+  deploy(baseline, 0); deploy(baseline, 1); tick(baseline, 0.321);
+  assert.equal(serialize(state), serialize(baseline));
+});
+
+test('all twelve legacy rounds preserve geometry and can still finish after migration', () => {
+  for (let levelIndex = 0; levelIndex < 12; levelIndex++) {
+    const state = createGame(levelIndex, 1);
+    // Exercise old-format migration across the entire previous catalogue.
+    const snapshot = JSON.parse(serialize(state));
+    snapshot.version = 1;
+    delete snapshot.campaignVersion;
+    const migrated = restore(JSON.stringify(snapshot));
+    assert.equal(migrated.levelId, `sculpture-${levelIndex + 1}`);
+    assert.equal(migrated.total, getStateLevel(migrated).total);
+    for (let frame = 0; frame < 2000 && migrated.status === 'playing'; frame++) {
+      supplyVisibleColors(migrated);
+      tick(migrated, 0.25);
+    }
+    assert.equal(migrated.status, 'won', `legacy round ${levelIndex + 1} is winnable`);
+    validateState(migrated);
+  }
 });

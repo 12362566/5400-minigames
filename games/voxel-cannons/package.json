@@ -1,1 +1,21 @@
-{"name":"cube-salvo","version":"1.0.1","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs","serve":"python3 -m http.server 8768"}}
+{
+  "name": "cube-salvo",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "serve": "python3 -m http.server 8768",
+    "test:bundle": "node --test tests/bundle.test.mjs"
+  },
+  "dependencies": {
+    "@babylonjs/core": "9.30.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

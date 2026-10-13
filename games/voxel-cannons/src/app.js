@@ -1,4 +1,4 @@
-import { createGame, deploy, tick, exposedTargets, serialize, restore } from './engine.js';
+import { createGame, deploy, tick, exposedTargets, serialize, restore, getStateLevel } from './engine.js';
 import { LEVELS } from './levels.js';
 import { VoxelRenderer, PALETTE, cannonSVG } from './renderer.js';
 
@@ -8,7 +8,7 @@ const query=new URLSearchParams(location.search);
 const qaMode=query.has('qa');
 let state,unlocked=1,best={},sound=false,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,userPaused=false,saveError=false;
 let dirty=false,lastSave=0,lastFrame=0,lastHUD=0,toastUntil=0,lastUI='',lastQueues='',lastStatus='',resultShown=false;
-let audioContext=null,lastAudio=0,confirmAction=null;
+let audioContext=null,lastAudio=0,confirmAction=null,cameraPreset='opening';
 function safeLoad(){
   if(qaMode)return;
   try{
@@ -17,27 +17,28 @@ function safeLoad(){
     state=restore(data.game);unlocked=Math.max(1,Math.min(LEVELS.length,Math.floor(Number(data.unlocked)||1)));
     if(state.levelIndex>=unlocked)unlocked=state.levelIndex+1;
     if(data.best&&typeof data.best==='object')for(const [k,v] of Object.entries(data.best)){if(/^\d+$/.test(k)&&Number.isFinite(v)&&v>=0)best[k]=v;}
-    sound=data.sound===true;reduced=data.reduced===true||reduced;
+    cameraPreset=data.cameraPreset==='side'?'side':'opening';sound=data.sound===true;reduced=data.reduced===true||reduced;
     userPaused=state.status==='playing'&&state.slots.some(Boolean);
   }catch(e){state=null;toastUntil=-1;}
 }
 safeLoad();
 state=state||createGame(0);
-const renderer=new VoxelRenderer($('game-canvas'));
-renderer.setState(state,LEVELS[state.levelIndex]);renderer.reduced=reduced;
+if(state.campaignVersion===1&&state.hits===0&&state.slots.every(c=>!c))state=createGame(state.levelIndex);
+const renderer=new VoxelRenderer($('game-canvas'),{forceUnavailable:qaMode&&query.has('no-webgl')});
+renderer.setState(state,getStateLevel(state));renderer.setCameraPreset?.(cameraPreset);renderer.reduced=reduced;
 const pauseCard=document.createElement('div');pauseCard.id='pause-card';pauseCard.className='pause-card';pauseCard.hidden=true;
 pauseCard.innerHTML='<span class="pause-symbol" aria-hidden="true">Ⅱ</span><strong>歇一会儿</strong><span>进度在这里，随时接着打</span><button id="continue-game" class="button button-primary">继续游戏</button>';
 $('stage').append(pauseCard);
 const dialogIds=['menu-dialog','level-dialog','result-dialog','confirm-dialog'];
 const dialogs=dialogIds.map($);
 function anyDialog(){return dialogs.some(d=>d.open);}
-function paused(){return userPaused||anyDialog()||document.hidden;}
+function paused(){return renderer.blocked||userPaused||anyDialog()||document.hidden;}
 function toast(text){$('toast').textContent=text;$('toast').classList.add('show');toastUntil=performance.now()+2300;}
 function save(force=false){
   if(qaMode)return;
   if(!force&&!dirty)return;
   lastSave=performance.now();
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:1,game:serialize(state),unlocked,best,sound,reduced}));dirty=false;saveError=false;lastSave=performance.now();}
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:1,game:serialize(state),unlocked,best,sound,reduced,cameraPreset}));dirty=false;saveError=false;lastSave=performance.now();}
   catch(e){if(!saveError){toast('浏览器暂时不能保存，当前游戏仍可继续');saveError=true;}}
 }
 function soundInit(){if(!sound)return;try{audioContext=audioContext||new (window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')audioContext.resume();}catch(e){sound=false;}}
@@ -50,6 +51,7 @@ function ping(color){
 function closeAll(){dialogs.forEach(d=>{if(d.open)d.close();});}
 function openDialog(id){const d=$(id);if(!d.open)d.showModal();renderHUD(true);save(true);}
 function updateSettings(){
+  $('camera-button').textContent=`视角：${cameraPreset==='side'?'斜侧视角':'片头视角'}`;
   $('sound-button').textContent=`音效：${sound?'开':'关'}`;$('sound-button').setAttribute('aria-pressed',String(sound));
   $('motion-button').textContent=`轻动效：${reduced?'开':'关'}`;$('motion-button').setAttribute('aria-pressed',String(reduced));
   document.body.classList.toggle('reduce-motion',reduced);renderer.reduced=reduced;
@@ -78,7 +80,7 @@ function renderHUD(force=false){
     const targets=new Set(visible.map(v=>v.color));
     $('active-slots').innerHTML=state.slots.map((c,i)=>c?`<div role="group" class="slot occupied ${targets.has(c.color)?'firing':'blocked'}" style="${theme(c.color)}" aria-label="${PALETTE[c.color].name}炮手，剩${c.ammo}发，${targets.has(c.color)?'射击中':'等待同色方块'}"><span class="cannon">${cannonSVG(c.color,c.ammo)}</span><span class="slot-state">${targets.has(c.color)?'射击中':'等待同色'}</span></div>`:`<div role="group" class="slot empty" aria-label="空闲炮位 ${i+1}"><span class="slot-number">${i+1}</span><span class="slot-state">空位</span></div>`).join('');
   }
-  const level=LEVELS[state.levelIndex],pct=Math.round(state.hits/state.total*100);
+  const level=getStateLevel(state),pct=Math.round(state.hits/state.total*100);
   $('level-label').textContent=`${String(state.levelIndex+1).padStart(2,'0')} / ${String(LEVELS.length).padStart(2,'0')} · ${level.name}`;
   $('progress-label').textContent=`${pct}%`;$('progress-fill').style.width=`${pct}%`;
   $('progress-fill').parentElement.setAttribute('aria-valuenow',String(pct));
@@ -104,6 +106,8 @@ function selectColumn(col){
   if(result.ok){dirty=true;renderHUD(true);save(true);}
   else if(result.reason==='slots-full')toast('5 个炮位已经满了，等一个空位');
 }
+renderer.onSelectColumn=selectColumn;
+renderer.onContextChange=()=>{userPaused=true;save(true);renderHUD(true);};
 $('queue-buttons').addEventListener('click',e=>{const b=e.target.closest('[data-column]');if(b)selectColumn(Number(b.dataset.column));});
 $('menu-button').addEventListener('click',()=>openDialog('menu-dialog'));
 $('close-menu').addEventListener('click',()=>{$('menu-dialog').close();renderHUD(true);});
@@ -116,6 +120,7 @@ function askRestart(){
 $('restart-button').addEventListener('click',askRestart);
 $('confirm-cancel').addEventListener('click',()=>{$('confirm-dialog').close();confirmAction=null;renderHUD(true);});
 $('confirm-ok').addEventListener('click',()=>{const action=confirmAction;confirmAction=null;$('confirm-dialog').close();action?.();});
+$('camera-button').addEventListener('click',()=>{cameraPreset=cameraPreset==='opening'?'side':'opening';renderer.setCameraPreset?.(cameraPreset);updateSettings();dirty=true;save(true);});
 $('sound-button').addEventListener('click',()=>{sound=!sound;soundInit();updateSettings();dirty=true;save(true);});
 $('motion-button').addEventListener('click',()=>{reduced=!reduced;updateSettings();dirty=true;save(true);});
 function renderLevels(){
@@ -133,7 +138,7 @@ $('level-grid').addEventListener('click',e=>{
 function startLevel(index){
   if(index<0||index>=LEVELS.length||index>=unlocked)return;
   closeAll();state=createGame(index);userPaused=false;resultShown=false;lastQueues='';lastUI='';
-  renderer.setState(state,LEVELS[index]);dirty=true;renderHUD(true);save(true);
+  renderer.setState(state,getStateLevel(state));dirty=true;renderHUD(true);save(true);
 }
 function showResult(){
   if(resultShown)return;resultShown=true;
@@ -181,6 +186,6 @@ function frame(now){
 requestAnimationFrame(frame);
 // A local, explicit test route. It is inert in the normal game and never contacts a service.
 if(qaMode){window.cubeSalvoQA={get state(){return state;},get unlocked(){return unlocked;},get paused(){return paused();},get renderer(){return renderer;},createGame,deploy,tick,restore,serialize,LEVELS,exposedTargets,
-  load(s){closeAll();state=s;unlocked=12;userPaused=false;resultShown=false;lastQueues='';renderer.setState(state,LEVELS[state.levelIndex]);renderHUD(true);},
+  load(s){closeAll();state=s;unlocked=12;userPaused=false;resultShown=false;lastQueues='';renderer.setState(state,getStateLevel(state));renderHUD(true);},
   render(){renderHUD(true);renderer.render(0);},setPaused(value){userPaused=value;renderHUD(true);},startLevel,
   checkGeometry(){const items=['game-canvas','menu-button','queue-buttons','active-slots','hint','controls'];return Object.fromEntries(items.map(id=>{const r=$(id).getBoundingClientRect();return[id,{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}]}));}};}

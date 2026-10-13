@@ -6,23 +6,25 @@
  * Four front-to-back reserve queues feed five active slots. Timers are integer
  * microseconds. No DOM, random source, wall clock, renderer, or dependencies.
  */
-import { COLORS, LEVELS, getLevel, nextLevelIndex } from './levels.js';
+import { COLORS, LEVELS, CURRENT_CAMPAIGN_VERSION, getLevel, nextLevelIndex } from './levels.js';
 
 export { COLORS, LEVELS, nextLevelIndex };
 export const SLOT_COUNT = 5;
 export const FIRE_INTERVAL = 0.095;
 export const FIRE_INTERVAL_US = 95_000;
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 const US = 1_000_000;
 const STATUSES = ['playing', 'won', 'lost'];
 
 const copyCannon = cannon => ({ ...cannon, cooldown: 0, cooldownUs: 0 });
 const counts = () => Object.fromEntries(COLORS.map(color => [color, 0]));
 
-export function createGame(levelIndex = 0) {
-  const level = getLevel(levelIndex);
+export function createGame(levelIndex = 0, campaignVersion = CURRENT_CAMPAIGN_VERSION) {
+  const level = getLevel(levelIndex, campaignVersion);
   return {
     version: SAVE_VERSION,
+    campaignVersion,
+    dimensions: level.dimensions,
     levelIndex,
     levelId: level.id,
     voxels: level.voxels.map(voxel => ({ ...voxel })),
@@ -36,6 +38,11 @@ export function createGame(levelIndex = 0) {
     shotCount: 0,
     progress: { hits: 0, total: level.total },
   };
+}
+
+/** Canonical geometry for either the current campaign or a restored legacy round. */
+export function getStateLevel(state) {
+  return getLevel(state.levelIndex, state.campaignVersion);
 }
 
 /** A frontmost live cube in each (x,y) ray, including after holes open up. */
@@ -165,7 +172,7 @@ export function summarize(state) {
     status: state.status,
     levelIndex: state.levelIndex,
     levelNumber: state.levelIndex + 1,
-    levelName: LEVELS[state.levelIndex].name,
+    levelName: getStateLevel(state).name,
     hits: state.hits,
     total: state.total,
     remaining: state.total - state.hits,
@@ -198,6 +205,7 @@ function isRecord(value) {
 export function serialize(state) {
   const snapshot = {
     version: SAVE_VERSION,
+    campaignVersion: state.campaignVersion,
     levelIndex: state.levelIndex,
     status: state.status,
     timeUs: state.timeUs,
@@ -220,12 +228,15 @@ export function restore(json) {
   let data;
   try { data = JSON.parse(json); } catch { throw new Error('Invalid save: malformed JSON'); }
   assert(isRecord(data), 'expected an object');
-  assert(data.version === SAVE_VERSION, 'unsupported version');
+  assert(data.version === 1 || data.version === SAVE_VERSION, 'unsupported version');
+  const campaignVersion = data.version === 1 ? 1 : data.campaignVersion;
+  assert(campaignVersion === 1 || campaignVersion === CURRENT_CAMPAIGN_VERSION, 'unknown campaign');
+  assert(data.version !== 1 || data.campaignVersion === undefined || data.campaignVersion === 1, 'legacy campaign mismatch');
   assert(Number.isInteger(data.levelIndex) && data.levelIndex >= 0 && data.levelIndex < LEVELS.length, 'unknown level');
   assert(STATUSES.includes(data.status), 'unknown status');
   assert(Number.isSafeInteger(data.timeUs) && data.timeUs >= 0, 'bad elapsed time');
-  const state = createGame(data.levelIndex);
-  const level = LEVELS[data.levelIndex];
+  const state = createGame(data.levelIndex, campaignVersion);
+  const level = getStateLevel(state);
   assert(Array.isArray(data.alive) && data.alive.length === level.total && data.alive.every(value => value === 0 || value === 1), 'bad voxel mask');
   // Every legal ray has a removed prefix followed by a surviving suffix.
   // A removed cube behind a surviving foreground cube cannot be reached.
@@ -293,7 +304,8 @@ export function restore(json) {
 export function validateState(state) {
   assert(isRecord(state), 'expected a game state');
   const restored = restore(serialize(state));
-  assert(state.version === SAVE_VERSION && state.levelId === restored.levelId, 'bad state identity');
+  assert(state.version === SAVE_VERSION && state.campaignVersion === restored.campaignVersion && state.levelId === restored.levelId, 'bad state identity');
+  assert(isRecord(state.dimensions) && ['width', 'height', 'depth'].every(axis => state.dimensions[axis] === restored.dimensions[axis]), 'modified dimensions');
   assert(state.total === restored.total && state.elapsed === restored.elapsed, 'inconsistent derived state');
   assert(isRecord(state.progress) && state.progress.hits === restored.hits && state.progress.total === restored.total, 'inconsistent progress');
   assert(state.voxels.every((voxel, index) => {
@@ -302,7 +314,7 @@ export function validateState(state) {
       voxel.z === expected.z && voxel.color === expected.color && voxel.alive === expected.alive;
   }), 'modified voxel geometry');
   for (const cannon of [...state.slots.filter(Boolean), ...state.queues.flat()]) {
-    const expected = LEVELS[state.levelIndex].queues.flat().find(entry => entry.id === cannon.id);
+    const expected = getStateLevel(state).queues.flat().find(entry => entry.id === cannon.id);
     assert(expected && cannon.color === expected.color && cannon.total === expected.total, 'modified cannon identity');
     assert(cannon.cooldown === cannon.cooldownUs / US, 'inconsistent derived cooldown');
   }

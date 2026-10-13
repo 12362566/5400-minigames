@@ -1,16 +1,58 @@
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-const modules=['levels','engine','renderer','app'];
-let output='/* Cube Salvo · original offline browser game · generated from src/ by node build.mjs */\n(()=>{\n\"use strict\";\n';
-for(const name of modules){
-  let source=fs.readFileSync(new URL(`./src/${name}.js`,import.meta.url),'utf8');
-  const exports=[];
-  source=source.replace(/^import\s*\{([^}]+)\}\s*from\s*['"]\.\/([^'"]+)\.js['"];?\s*$/gm,(_,bindings,dep)=>`const {${bindings}} = __${dep};`);
-  source=source.replace(/export\s*\{([^}]+)\};?/g,(_,bindings)=>{exports.push(...bindings.split(',').map(x=>x.trim()).filter(Boolean));return '';});
-  source=source.replace(/export\s+(const|let|function|class)\s+([A-Za-z_$][\w$]*)/g,(_,kind,id)=>{exports.push(id);return `${kind} ${id}`;});
-  if(/\b(?:import|export)\s+(?:\{|\*|default|const|function)/.test(source))throw new Error(`Unsupported module syntax in ${name}`);
-  output+=`const __${name}=(()=>{\n${source}\nreturn {${[...new Set(exports)].join(',')}};\n})();\n`;
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
+import { build } from 'esbuild';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
+
+/** One local, classic-script artifact. esbuild inlines static and literal dynamic imports. */
+export const bundleOptions = Object.freeze({
+  absWorkingDir: root,
+  entryPoints: ['src/app.js'],
+  outfile: 'game.js',
+  bundle: true,
+  platform: 'browser',
+  format: 'iife',
+  target: ['es2020'],
+  treeShaking: true,
+  minify: true,
+  splitting: false,
+  sourcemap: false,
+  charset: 'utf8',
+  legalComments: 'inline',
+  metafile: true,
+  write: false,
+  logLevel: 'warning',
+  banner: {
+    js: '/* Cube Salvo 2.0.0 · bundled local Babylon.js runtime. Licenses: THIRD_PARTY_NOTICES.md and vendor/. */',
+  },
+});
+
+export async function buildGame({ write = true } = {}) {
+  const result = await build(bundleOptions);
+  const outputs = Object.entries(result.metafile.outputs);
+  if (result.outputFiles.length !== 1 || outputs.length !== 1 || !outputs[0][0].endsWith('game.js')) {
+    throw new Error('The offline game must produce exactly one JavaScript file.');
+  }
+  if (outputs.some(([, output]) => output.imports.length !== 0)) {
+    throw new Error('The offline game must not have runtime module imports or shader chunks.');
+  }
+  const [{ contents }] = result.outputFiles;
+  if (write) await fs.writeFile(path.join(root, 'game.js'), contents);
+  const report = {
+    bytes: contents.byteLength,
+    gzipBytes: gzipSync(contents).byteLength,
+    sha256: createHash('sha256').update(contents).digest('hex'),
+    modules: Object.keys(result.metafile.inputs).length,
+    runtimeImports: outputs.flatMap(([, output]) => output.imports),
+  };
+  return { ...result, report };
 }
-output+='})();\n';
-fs.writeFileSync(new URL('./game.js',import.meta.url),output);
-console.log(`Built game.js (${Buffer.byteLength(output)} bytes), no network dependencies.`);
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const { report } = await buildGame();
+  console.log(`Built game.js: ${report.bytes.toLocaleString('en-US')} bytes (${report.gzipBytes.toLocaleString('en-US')} gzip), ${report.modules} local modules, zero runtime imports.`);
+  console.log(`SHA-256: ${report.sha256}`);
+}

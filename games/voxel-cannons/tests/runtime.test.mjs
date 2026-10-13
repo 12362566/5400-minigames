@@ -90,7 +90,7 @@ function application({ saved, qa = true, storageFails = false } = {}) {
   });
   const source = fs.readFileSync(new URL('../src/app.js', import.meta.url), 'utf8')
     .replace(/^import .*;$/gm, '');
-  vm.runInContext(`const { createGame, deploy, tick, exposedTargets, summarize, serialize, restore } = engine;\n${source}\nglobalThis.readApp = () => ({ state, unlocked, userPaused, resultShown, best, sound, reduced, confirmAction });`, context);
+  vm.runInContext(`const { createGame, deploy, tick, exposedTargets, summarize, serialize, restore, getStateLevel } = engine;\n${source}\nglobalThis.readApp = () => ({ state, unlocked, userPaused, resultShown, best, sound, reduced, confirmAction });`, context);
   const drain = () => { while (pending.length) pending.shift()(); };
   return {
     get: id => elements.get(id), read: () => context.readApp(), window, document, storage,
@@ -206,4 +206,26 @@ test('unavailable storage retries are throttled instead of retried every animati
   app.key('1'); advance(app, 125); // Two seconds, including the first retry window.
   assert.ok(app.storageWriteAttempts <= 3, `unexpected hot-loop storage attempts: ${app.storageWriteAttempts}`);
   assert.ok(app.read().state.hits > 0);
+});
+
+test('legacy in-progress browser save preserves its layout, then confirmed restart uses tall campaign', () => {
+  const legacy=fs.readFileSync(new URL('fixtures/legacy-v1-midround.json',import.meta.url),'utf8');
+  const saved=JSON.stringify({version:1,game:legacy,unlocked:7,best:{0:42},sound:false,reduced:false});
+  const app=application({saved,qa:false});
+  assert.equal(app.read().state.campaignVersion,1);assert.equal(app.read().state.total,476);assert.equal(app.read().state.hits,8);assert.equal(app.read().userPaused,true);
+  app.click('restart-button');app.click('confirm-cancel');assert.equal(app.read().state.hits,8);
+  app.click('restart-button');app.click('confirm-ok');assert.equal(app.read().state.campaignVersion,2);assert.equal(app.read().state.total,2072);assert.equal(app.read().unlocked,7);assert.equal(app.read().best[0],42);
+});
+
+test('an untouched legacy browser save upgrades without losing any played progress', () => {
+  const app=application({saved:savedEnvelope(engine.createGame(0,1)),qa:false});
+  assert.equal(app.read().state.campaignVersion,2);assert.equal(app.read().state.hits,0);
+});
+
+test('unavailable or lost WebGL pauses simulation and context callback keeps explicit resume', () => {
+  const app=application();app.key('1');advance(app);const hits=app.read().state.hits;
+  app.qa.renderer.blocked=true;advance(app);assert.equal(app.read().state.hits,hits);
+  app.qa.renderer.onContextChange(true);assert.equal(app.read().userPaused,true);
+  app.qa.renderer.blocked=false;app.qa.renderer.onContextChange(false);advance(app);assert.equal(app.read().state.hits,hits);
+  app.click('continue-game');advance(app);assert.ok(app.read().state.hits>hits);
 });
