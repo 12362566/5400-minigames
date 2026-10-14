@@ -1,0 +1,35 @@
+{
+  "version": "2.0.1",
+  "baseline": "bfd657c93164c063a88dcaf71f8428e24ec9bb3f",
+  "date": "2026-10-14",
+  "tests": {
+    "passed": 51,
+    "failed": 0,
+    "instance_binding_before_fix": {
+      "passed": 0,
+      "failed": 4
+    },
+    "instance_binding_after_fix": {
+      "passed": 4,
+      "failed": 0
+    },
+    "lighting": {
+      "passed": 4,
+      "failed": 0
+    }
+  },
+  "bundle": {
+    "bytes": 1835862,
+    "gzip_bytes": 443164,
+    "modules": 566,
+    "runtime_imports": 0,
+    "sha256": "20d2dabfdd7ed7518e4b8f3df5fcbd893d7c8efe570f80edb13becb5afbcf7a0"
+  },
+  "verified_scope": "Deterministic simulation, save compatibility, actual Babylon Geometry bindings/native-buffer uploads using NullEngine, lighting arithmetic and offline bundling.",
+  "not_verified": "Corrected GPU pixels, browser/driver behavior, phone visual acceptance and performance.",
+  "unchanged": {
+    "engine": "21c25101723ee42e5ad9bfa7fabdfdfdcc7f87fe808874ef3e7d44a1eff411ea",
+    "current_levels": "a61c07bb6141a8072bd5a54c490761d0fed9fc2e128418ba52d36182eb3b8e73",
+    "legacy_levels": "b20f5febca9519f8942ebd861dc78dec27bfa46fb6f03ec73d8812d64f57e71b"
+  }
+}

@@ -11,7 +11,7 @@ const read = relative => fs.readFile(new URL(relative, root));
 test('engine and bundler dependencies are exact and match the reproducible lockfile', async () => {
   const pkg = JSON.parse(await read('package.json'));
   const lock = JSON.parse(await read('package-lock.json'));
-  assert.equal(pkg.version, '2.0.0');
+  assert.equal(pkg.version, '2.0.1');
   assert.equal(lock.version, pkg.version);
   assert.equal(pkg.dependencies['@babylonjs/core'], '9.30.0');
   assert.equal(pkg.devDependencies.esbuild, '0.28.2');

@@ -1,3 +1,26 @@
+# 2.0.1 render hotfix QA
+
+Date: 2026-10-14. Baseline: `bfd657c93164c063a88dcaf71f8428e24ec9bb3f`. This is a narrow renderer correction; engine, current/legacy level definitions, camera settings and save formats are unchanged.
+
+## Reproduced faults and fixes
+
+1. **Shared Geometry corrupted thin-instance draw bindings.** Four color batches cloned one template, so their `world0`–`world3` attributes all ended up referencing the final ink batch's matrix buffer. The original private CPU arrays differed, which is why earlier bookkeeping tests missed it. Babylon's official [thin-instance limitations](https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances) require `makeGeometryUnique()` for a cloned mesh before adding thin instances. The renderer now does this for each batch.
+2. **Diffuse light clipping produced the yellow floor.** The installed StandardMaterial shader equations with old light intensities predict floor RGB(255,255,157) and shadow RGB(255,172,94), matching the reported colors. The 0.65 hemispheric + 0.35 directional budget bounds diffuse energy. The palette remains in StandardMaterial's expected gamma-space convention; no speculative color-space conversion or browser-theme blame was applied.
+
+## Regression evidence
+
+- The four new instance-binding tests **all failed on unpatched code and all pass on the fix**. They inspect actual Geometry vertex attributes and recorded native-buffer uploads, not just logical state. Example: the old green draw bound translation `[-6.5,0.8,0.5,1]` where its voxel required `[-3.5,2.8,0.5,1]`. Four batches shared one geometry/buffer; the fixed version owns four.
+- Tests cover all twelve current levels, palette/material separation, dynamic swap-removal uploads, unaffected other-color uploads, empty batches, partially cleared reloads, and template/cannon isolation.
+- Four additional lighting tests check actual constructor lights/materials, unchanged palette, former clipping arithmetic and the corrected nonclipping diffuse budget. These are CPU shader predictions, not rendered-pixel claims.
+- Clean installation exposed LF normalization in the repository's Babylon license; its exact upstream CRLF bytes have been restored without changing the legal text. Other upstream notices were already exact.
+- Full-suite and bundle results are recorded in `qa/hotfix-test-results.json`.
+
+## Remaining acceptance boundary
+
+The previous cloud browser could not create WebGL contexts. NullEngine plus recorded-buffer tests reproduce and verify the specific software faults, but do **not** prove final GPU pixels, driver behavior or frame rate. Do not reuse 2.0.0 layout-only results below as a claim that 2.0.1 phone rendering was visually verified. A WebGL-enabled device must confirm all four voxel colors, the restored sculpture silhouette and the nonyellow floor. The user's screenshot remains private and is not included in the repository.
+
+---
+
 # 2.0 engine replacement QA
 
 Date: 2026-10-13. Runtime deployed in commit `436a34036384292f8ba8aa89857f0e638f51b4a9`; diagnostic added in `f915c65df28a133683e8a3c4ecb5b6f072978326` without changing the runtime. Both exact-SHA Pages deployments succeeded. Published index, CSS, game bundle and viewport fixture match the frozen SHA-256 files.

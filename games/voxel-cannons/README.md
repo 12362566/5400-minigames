@@ -45,3 +45,11 @@
 Babylon 和 shader 全部打进本地 `game.js`，运行时不访问 CDN。依赖来源、锁定版本和许可见 `THIRD_PARTY_NOTICES.md`；许可证保存在 `vendor/`。
 
 技术依据：[相机](https://doc.babylonjs.com/features/featuresDeepDive/cameras/camera_introduction)、[thin instances](https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances)、[阴影](https://doc.babylonjs.com/features/featuresDeepDive/lights/shadows)。
+
+## 2.0.1 渲染热修复
+
+修复了 2.0.0 中四色体素批次意外共享实例矩阵缓冲的问题：画面可能只剩墨蓝色块，形状也缺失。每个颜色批次现在先分离 geometry，再设置 thin-instance 数据；消除后的动态上传和关卡恢复也有独立绑定回归检查。
+
+同时将环境光/方向光强度从 0.85/1.15 改为 0.65/0.35，避免杏色地面红绿通道被过曝截断成亮黄色。未改颜色空间、相机、关卡数据或存档格式。新旧存档和当前进度保留。
+
+静态模型和实际 Babylon 缓冲绑定测试通过不等于手机像素验收。云浏览器的 WebGL 仍受环境限制，最终手机画面需在启用 WebGL 的设备上核对。请使用带 `?v=2.0.1` 的地址；菜单底部显示渲染版本。

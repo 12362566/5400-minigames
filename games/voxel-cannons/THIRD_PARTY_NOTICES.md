@@ -1,6 +1,6 @@
 # Third-party notices
 
-Cube Salvo 2.0.0 bundles the local Babylon.js 3D engine into `game.js`. No CDN script is needed to load this game. Source dependencies are pinned in `package.json`; complete archive URLs, exact versions, and SHA-512 integrity values are committed in `package-lock.json`.
+Cube Salvo 2.0.1 bundles the local Babylon.js 3D engine into `game.js`. No CDN script is needed to load this game. Source dependencies are pinned in `package.json`; complete archive URLs, exact versions, and SHA-512 integrity values are committed in `package-lock.json`.
 
 ## Babylon.js
 

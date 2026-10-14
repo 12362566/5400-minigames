@@ -51,8 +51,9 @@ export class VoxelRenderer {
    this.scene=new Scene(this.engine);this.scene.clearColor=Color4.FromHexString('#f7a660ff');this.scene.ambientColor=new Color3(.24,.24,.24);
    this.camera=new ArcRotateCamera('fixed-reference-camera',(-90-CAMERA_CALIBRATION.yaw)*DEG,(90-CAMERA_CALIBRATION.elevation)*DEG,100,Vector3.Zero(),this.scene);
    this.camera.mode=Camera.ORTHOGRAPHIC_CAMERA;this.camera.minZ=.1;this.camera.maxZ=220;this.camera.inputs.clear();
-   const fill=new HemisphericLight('soft-sky',new Vector3(0,1,0),this.scene);fill.intensity=.85;fill.groundColor=new Color3(.38,.29,.26);
-   const key=new DirectionalLight('sun',new Vector3(.4,-1,.65),this.scene);key.position=new Vector3(-25,40,-30);key.intensity=1.15;
+   // StandardMaterial sums diffuse lights before clamping: keep total energy <= 1.
+   const fill=new HemisphericLight('soft-sky',new Vector3(0,1,0),this.scene);fill.intensity=.65;fill.groundColor=new Color3(.38,.29,.26);
+   const key=new DirectionalLight('sun',new Vector3(.4,-1,.65),this.scene);key.position=new Vector3(-25,40,-30);key.intensity=.35;
    this.shadow=new ShadowGenerator(1024,key);this.shadow.usePercentageCloserFiltering=true;this.shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;this.shadow.bias=.003;this.shadow.normalBias=.02;this.shadow.darkness=.22;
    this.materials={};for(const [color,p]of Object.entries(PALETTE))this.materials[color]=this.material(color,p.hex,.22);
    this.groundMat=this.material('apricot-floor','#f8a459',.03);this.padMat=this.material('empty-slot','#ffe8c9',.1);this.plinthMat=this.material('violet-rim','#b940c1',.12);this.muzzleMat=this.material('muzzle','#19252b',.04);this.whiteMat=this.material('projectile','#fff8d8',.05);this.whiteMat.emissiveColor=new Color3(.6,.48,.28);
@@ -75,7 +76,10 @@ export class VoxelRenderer {
   for(const c of this.cannons.values())this.disposeCannon(c);this.cannons.clear();
   for(const b of this.bullets){b.mesh.dispose();b.trail.dispose();}for(const p of this.particles)p.mesh.dispose();this.bullets=[];this.particles=[];
   for(const color of Object.keys(PALETTE)){
-   const list=state.voxels.filter(v=>v.alive&&v.color===color),buffer=new Float32Array(Math.max(1,list.length)*16),mesh=this.cubeTemplate.clone('voxels-'+color);mesh.setEnabled(list.length>0);mesh.material=this.materials[color];mesh.isPickable=false;mesh.receiveShadows=true;
+   const list=state.voxels.filter(v=>v.alive&&v.color===color),buffer=new Float32Array(Math.max(1,list.length)*16),mesh=this.cubeTemplate.clone('voxels-'+color);
+   // Thin-instance matrix attributes belong to Geometry. Clones must not share
+   // that geometry or the last color overwrites every batch's GPU bindings.
+   mesh.makeGeometryUnique();mesh.setEnabled(list.length>0);mesh.material=this.materials[color];mesh.isPickable=false;mesh.receiveShadows=true;
    const ids=list.map(v=>v.id),index=new Map(ids.map((id,i)=>[id,i]));list.forEach((v,i)=>Matrix.Translation(...this.world(v).asArray()).copyToArray(buffer,i*16));
    mesh.thinInstanceSetBuffer('matrix',buffer,16,false);mesh.thinInstanceCount=list.length;mesh.thinInstanceRefreshBoundingInfo();this.shadow.addShadowCaster(mesh);this.voxelGroups.set(color,{mesh,buffer,ids,index,count:list.length});
   }
@@ -129,6 +133,7 @@ export class VoxelRenderer {
  }
  project(point){return Vector3.Project(point,Matrix.Identity(),this.scene.getTransformMatrix(),this.camera.viewport.toGlobal(this.engine.getRenderWidth(),this.engine.getRenderHeight())).scale(this.engine.getHardwareScalingLevel());}
  pickQueue(column){const c=this.cannons.get('queue'+column+'-0');if(!c)return null;const p=this.project(c.position.add(new Vector3(0,.7,0)));const hit=this.scene.pick(p.x,p.y);return {x:p.x,y:p.y,column:hit?.pickedMesh?.metadata?.column??null};}
- info(){return {...this.stats,engine:this.available?'Babylon.js 9.30.0':'unavailable',webgl:this.engine?.webGLVersion||0,dpr:this.engine?1/this.engine.getHardwareScalingLevel():0,visibleVoxels:[...this.voxelGroups.values()].reduce((n,g)=>n+g.count,0),meshes:this.scene?.meshes.length||0,fps:Math.round(this.engine?.getFps()||0),available:this.available,blocked:this.blocked,error:this.error||null,ready:this.ready,projectiles:this.bullets.length};}
+ batchDiagnostics(){const groups=[...this.voxelGroups.values()];return {geometryCount:new Set(groups.map(g=>g.mesh.geometry)).size,bufferCount:new Set(groups.map(g=>g.mesh.geometry.getVertexBuffer('world0')?.getBuffer())).size,boundMatricesCorrect:groups.length===4&&groups.every(g=>[0,1,2,3].every(i=>g.mesh.geometry.getVertexBuffer('world'+i)?.getData()===g.buffer)),colors:Object.fromEntries([...this.voxelGroups].map(([color,g])=>[color,{count:g.count,diffuse:g.mesh.material.diffuseColor.toHexString()}]))};}
+ info(){return {...this.stats,build:'2.0.1',batches:this.batchDiagnostics(),engine:this.available?'Babylon.js 9.30.0':'unavailable',webgl:this.engine?.webGLVersion||0,dpr:this.engine?1/this.engine.getHardwareScalingLevel():0,visibleVoxels:[...this.voxelGroups.values()].reduce((n,g)=>n+g.count,0),meshes:this.scene?.meshes.length||0,fps:Math.round(this.engine?.getFps()||0),available:this.available,blocked:this.blocked,error:this.error||null,ready:this.ready,projectiles:this.bullets.length};}
  dispose(){this.observer?.disconnect();this.scene?.dispose();this.engine?.dispose();}
 }

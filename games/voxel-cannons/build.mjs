@@ -26,7 +26,7 @@ export const bundleOptions = Object.freeze({
   write: false,
   logLevel: 'warning',
   banner: {
-    js: '/* Cube Salvo 2.0.0 · bundled local Babylon.js runtime. Licenses: THIRD_PARTY_NOTICES.md and vendor/. */',
+    js: '/* Cube Salvo 2.0.1 · bundled local Babylon.js runtime. Licenses: THIRD_PARTY_NOTICES.md and vendor/. */',
   },
 });
 
